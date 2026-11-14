@@ -10,8 +10,9 @@ from pathlib import Path
 
 from . import block_config
 from .project_config import MANIFEST_NAME, load_manifest
+from .paths import RESOURCE_ROOT
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = RESOURCE_ROOT
 MAX_ENTRIES = 400
 # 常见的大目录/工具目录，浏览时不显示，避免淹没项目目录。
 NOISE = {
@@ -24,7 +25,7 @@ def _shortcuts() -> list[dict]:
     home = Path.home()
     return [
         {"name": "主目录", "path": str(home)},
-        {"name": "Codifold 仓库", "path": str(ROOT)},
+        {"name": "Codifold 目录", "path": str(ROOT)},
         {"name": "示例", "path": str(ROOT / "examples")},
     ]
 

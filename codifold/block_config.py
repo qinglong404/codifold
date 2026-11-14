@@ -19,11 +19,12 @@ import re
 from pathlib import Path
 
 from .fsutil import data_revision
+from .paths import RESOURCE_ROOT
 from .project_config import MANIFEST_NAME, load_manifest
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT = ROOT / "examples" / "gradebook" / "gradebook.blocks.json"
-DEFAULT_PROJECT = ROOT / "examples" / "gradebook"
+DEFAULT = RESOURCE_ROOT / "examples" / "gradebook" / "gradebook.blocks.json"
+DEFAULT_PROJECT = RESOURCE_ROOT / "examples" / "gradebook"
 VIEW_ID = re.compile(r"^[a-z][a-z0-9_-]{0,63}$")
 VIEW_KINDS = {"main", "flow", "entry", "contract", "function",
               "struct", "toolbox"}

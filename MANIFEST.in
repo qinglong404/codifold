@@ -1,0 +1,6 @@
+include run.py CHANGELOG.md CONTRIBUTING.md SECURITY.md
+include frontend/THIRD_PARTY_NOTICES.md
+recursive-include frontend/dist *
+recursive-include docs *.md
+recursive-include examples *.py *.json *.csv *.md
+global-exclude *.py[cod]

@@ -4,37 +4,61 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
+env:
+  PYTHONUTF8: "1"
+
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.10", "3.13"]
+        include:
+          - {os: ubuntu-latest, python: "3.10"}
+          - {os: ubuntu-latest, python: "3.13"}
+          - {os: windows-latest, python: "3.13"}
+          - {os: macos-latest, python: "3.13"}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-      - name: 单元测试
+          python-version: ${{ matrix.python }}
+      - name: 单元与并发回归测试
+        env:
+          CODIFOLD_STATE_DIR: ${{ runner.temp }}/codifold-state
         run: python -B -m unittest discover -s tests -q
-      - name: 示例工作区门禁
+      - name: 完整示例机械门禁
         run: |
-          python -m codifold.workbench check examples/gradebook-chain --strict
-          python -m codifold.workbench check examples/taskflow --strict
-      - name: 安装与命令行冒烟
-        run: |
-          pip install -e .
-          codifold brief examples/gradebook --view gradebook
+          python -B -m codifold.workbench check examples/gradebook-chain --strict
+          python -B -m codifold.workbench check examples/taskflow --strict
 
-  frontend:
+  frontend-and-package:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
       - name: 前端构建
         working-directory: frontend
         run: |
           npm ci
           npm run build
+      - name: 检查源码附带的前端资源
+        run: git diff --exit-code -- frontend/dist
+      - name: 构建源码包与 wheel（从源码包构建）
+        run: |
+          python -m pip install build
+          python -m build
+      - name: 在仓库外验证安装包
+        run: |
+          python -m venv "$RUNNER_TEMP/codifold-smoke"
+          "$RUNNER_TEMP/codifold-smoke/bin/python" -m pip install dist/*.whl
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/codifold-smoke/bin/python" "$GITHUB_WORKSPACE/scripts/smoke_installed.py"

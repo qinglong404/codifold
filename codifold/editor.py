@@ -2,20 +2,21 @@
 
 编辑只作用于工作区里的 ``*.blocks.json`` 和 ``codifold.json``：先走
 ``block_config.validate`` 的结构校验，再原子写入，最后用
-``mapping_report.report`` 做整项目复检；复检失败会回滚到写入前的文件。
+``checks.report`` 做整项目复检；复检失败会回滚到写入前的文件。
+草稿允许尚未接通的视图；契约与引用错误仍然阻止保存。
 
 所有写接口都要求目录里存在 ``codifold.json``；单文件 ``?config=`` 模式保持只读。
 """
 from __future__ import annotations
 
 import json
-import shutil
 from pathlib import Path
 
-from . import block_config, flat, flat_ops, mapping_report, project_config, workspace_registry
+from . import block_config, checks, flat, flat_ops, project_config, workspace_registry
 from .fsutil import atomic_write_bytes as _atomic_write_bytes
 from .fsutil import atomic_write_text as _atomic_write_text
 from .fsutil import data_revision, file_revision
+from .locking import workspace_write
 
 MANIFEST_NAME = project_config.MANIFEST_NAME
 _UNSET = object()
@@ -158,8 +159,8 @@ def _set_entry(directory: Path, entry: str | None) -> None:
     _atomic_write_text(manifest_path, json.dumps(data, ensure_ascii=False, indent=2) + "\n")
 
 
-def _project_report(directory: Path) -> dict:
-    return mapping_report.report(str(directory))
+def _project_report(directory: Path, *, strict: bool = False) -> dict:
+    return checks.report(str(directory), draft=not strict)
 
 
 def _report_error(report: dict) -> str:
@@ -175,6 +176,7 @@ def _iter_blocks(blocks):
             yield from _iter_blocks(block["finally"])
 
 
+@workspace_write
 def save_view(path, config, revision=_UNSET) -> dict:
     """Create or update one view, validating the whole workspace afterwards."""
     directory = _workspace(path)
@@ -211,6 +213,7 @@ def save_view(path, config, revision=_UNSET) -> dict:
     }
 
 
+@workspace_write
 def save_views(path, configs, *, strict: bool = False) -> dict:
     """Create or update a batch of views, validating the workspace once.
 
@@ -251,7 +254,7 @@ def save_views(path, configs, *, strict: bool = False) -> dict:
                                _view_text(plan["config"],
                                           flat_format=plan["flat_format"]))
             written.append(plan)
-        report = _project_report(directory)
+        report = _project_report(directory, strict=strict)
         if not report["ok"]:
             raise ValueError(_report_error(report))
         if strict and report["warnings"]:
@@ -276,6 +279,15 @@ def save_views(path, configs, *, strict: bool = False) -> dict:
     }
 
 
+@workspace_write
+def apply_drafts(path, specs, *, strict: bool = False) -> dict:
+    """Allocate IDs and write drafts under the same workspace lock."""
+    from . import draft
+    configs = draft.compile_drafts(path, specs)
+    return save_views(path, configs, strict=strict)
+
+
+@workspace_write
 def mutate_view(path, view_id, action: str, *, revision=_UNSET, **payload) -> dict:
     """Apply one block/container operation to a flat view and revalidate."""
     directory = _workspace(path)
@@ -391,6 +403,7 @@ def event_names(path) -> dict:
     return {"events": sorted(names)}
 
 
+@workspace_write
 def delete_view(path, view_id, revision=_UNSET, manifest_revision=_UNSET) -> dict:
     """Delete one view; refuse the last view or a view referenced from elsewhere."""
     directory = _workspace(path)
@@ -451,6 +464,7 @@ def project_settings(path) -> dict:
     }
 
 
+@workspace_write
 def save_project(path, config, revision=_UNSET) -> dict:
     """Update editable manifest fields and revalidate the whole workspace.
 
@@ -576,47 +590,12 @@ def forget_workspace(path) -> dict:
     return {"recent": workspace_registry.recent()}
 
 
-def _guard_delete(directory: Path) -> None:
-    repo = block_config.ROOT
-    home = Path.home().resolve()
-    if directory == Path(directory.anchor):
-        raise ValueError("拒绝删除文件系统根目录")
-    if len(directory.parts) < 3:
-        raise ValueError("拒绝删除顶层目录")
-    if directory == home:
-        raise ValueError("拒绝删除用户主目录")
-    if directory == repo or directory in repo.parents:
-        raise ValueError("拒绝删除 Codifold 所在目录或其上级目录")
-    if repo in directory.parents:
-        raise ValueError("拒绝删除 Codifold 仓库内的目录")
-    if (directory / ".git").exists():
-        raise ValueError("目录包含 .git，拒绝删除")
-
-
 def delete_workspace(path, confirm) -> dict:
-    """Delete a workspace directory after an exact-path confirmation.
-
-    The endpoint is deliberately conservative: it refuses top-level
-    directories, the user's home, Codifold's own repository and directories
-    containing ``.git``.
-    """
-    if not isinstance(path, str) or not path.strip():
-        raise ValueError("缺少工作区路径")
-    supplied = Path(path).expanduser()
-    if supplied.is_symlink():
-        raise ValueError("不删除符号链接指向的目录，请直接使用真实路径")
-    directory = _workspace_directory(path)
-    if confirm != str(directory):
-        raise ValueError("删除确认不匹配，请传入完整工作区路径")
-    _guard_delete(directory)
-    shutil.rmtree(directory)
-    try:
-        workspace_registry.forget(directory)
-    except OSError:
-        pass
-    return {"deleted": str(directory), "recent": workspace_registry.recent()}
+    """Reject legacy whole-directory deletion, which could erase source code."""
+    raise ValueError("Demo 不提供整目录删除，请使用“移除最近记录”；源码和工作区文件请自行管理")
 
 
+@workspace_write
 def create_workspace(directory, name, description, view_id="main",
                      view_name="主流程", view_description=None) -> dict:
     """Create a new workspace directory with a manifest and one starter view."""

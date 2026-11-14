@@ -17,6 +17,7 @@ from pathlib import Path
 
 from . import checks, draft, editor, export_md, flat, narrative, project_config, validate
 from .brief import collect_brief
+from . import __version__
 
 KIND_LABELS = {
     "main": "主线",
@@ -204,15 +205,15 @@ def cmd_brief(args: argparse.Namespace) -> int:
 
 def cmd_apply(args: argparse.Namespace) -> int:
     specs = load_drafts(args.draft)
-    configs = draft.compile_drafts(args.workspace, specs)
     if args.dry_run:
+        configs = draft.compile_drafts(args.workspace, specs)
         manifest = project_config.load_manifest(Path(args.workspace).expanduser())
         if manifest is not None and manifest.get("format") == "flat":
             configs = [flat.from_nested(config) for config in configs]
         payload = configs[0] if len(configs) == 1 else {"views": configs}
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 0
-    result = editor.save_views(args.workspace, configs, strict=args.strict)
+    result = editor.apply_drafts(args.workspace, specs, strict=args.strict)
     summary = {
         "created": result["created"],
         "updated": result["updated"],
@@ -290,7 +291,11 @@ def build_parser() -> argparse.ArgumentParser:
         prog="codifold.workbench",
         description="Codifold 转换工作台：生成简报、编译局部草稿、批量写入并校验。",
     )
+    parser.add_argument("--version", action="version", version=f"Codifold {__version__} (demo)")
     sub = parser.add_subparsers(dest="command", required=True)
+
+    serve = sub.add_parser("serve", help="启动本地 Demo 阅读器与编辑器")
+    serve.add_argument("--port", type=int, default=5190)
 
     brief = sub.add_parser("brief", help="输出当前转换简报")
     brief.add_argument("workspace")
@@ -338,6 +343,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
+        if args.command == "serve":
+            if not 0 <= args.port <= 65535:
+                raise ValueError("端口必须在 0 到 65535 之间")
+            from .server import run
+            return run(args.port)
         if args.command == "mcp":
             return cmd_mcp(args)
         if args.command == "brief":

@@ -49,7 +49,7 @@ export function HomeScreen({onOpen, onBrowse, onNew}: {
   return <div className="home-screen">
     <header className="home-topbar">
       <span className="reader-brand"><Layers3 size={23} /><b>Codifold</b></span>
-      <span className="reader-product-label">BASE BLOCKS</span>
+      <span className="reader-product-label">DEMO</span>
       <span className="topbar-spacer" />
       <span className="reader-status"><i />本地运行</span>
       <button type="button" className="subtle-button" onClick={load} disabled={loading}>
@@ -58,9 +58,9 @@ export function HomeScreen({onOpen, onBrowse, onNew}: {
     </header>
     <main className="home-main">
       <section className="home-hero">
-        <span className="home-eyebrow">中文流程阅读器</span>
+        <span className="home-eyebrow">实验性中文逻辑图阅读器</span>
         <h1>选择一个工作区</h1>
-        <p>从示例开始，或浏览本机目录打开已有的工作区。每个工作区是一组 JSON，Codifold 只读取它，不运行被讲解的项目。</p>
+        <p>从示例开始，或打开你编写的工作区。建议边写代码边整理逻辑图；陌生项目的自动转换方式仍在探索。流程需要人工审核，Codifold 不执行被讲解的项目。</p>
         <div className="home-actions">
           <button type="button" className="primary-button" onClick={onBrowse}>
             <FolderOpen size={15} />浏览目录

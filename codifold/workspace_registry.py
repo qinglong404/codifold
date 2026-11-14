@@ -1,8 +1,4 @@
-"""Recently opened workspaces, persisted under ``.codifold/``.
-
-这份列表只是本机使用记录，不属于工作区数据：文件放在 Codifold 仓库的
-``.codifold/workspaces.json``，可用 ``CODIFOLD_STATE_DIR`` 改写位置（测试用）。
-"""
+"""Recently opened workspaces, persisted in the per-user state directory."""
 from __future__ import annotations
 
 import json
@@ -12,14 +8,15 @@ from pathlib import Path
 
 from . import project_config
 from .fsutil import atomic_write_text
+from .paths import state_dir
+from .locking import resource_lock
 
 ROOT = Path(__file__).resolve().parent.parent
 MAX_RECENT = 20
 
 
 def _state_dir() -> Path:
-    override = os.environ.get("CODIFOLD_STATE_DIR")
-    return Path(override).expanduser() if override else ROOT / ".codifold"
+    return state_dir()
 
 
 def _registry_path() -> Path:
@@ -32,6 +29,9 @@ def _normalize(path: str) -> Path:
 
 def _read() -> list[dict]:
     target = _registry_path()
+    if not target.exists() and not os.environ.get("CODIFOLD_STATE_DIR"):
+        # Read existing source-checkout records; the next write migrates them.
+        target = ROOT / ".codifold" / "workspaces.json"
     if not target.is_file():
         return []
     try:
@@ -93,6 +93,11 @@ def recent() -> list[dict]:
 
 
 def remember(directory) -> None:
+    with resource_lock("recent:" + str(_registry_path().resolve())):
+        _remember(directory)
+
+
+def _remember(directory) -> None:
     """Move a workspace to the front of the recent list."""
     target = _normalize(str(directory))
     manifest = project_config.load_manifest(target)
@@ -110,6 +115,11 @@ def remember(directory) -> None:
 
 def forget(path) -> bool:
     """Remove one workspace from the recent list without touching the directory."""
+    with resource_lock("recent:" + str(_registry_path().resolve())):
+        return _forget(path)
+
+
+def _forget(path) -> bool:
     target = _normalize(str(path))
     items = _read()
     remaining = [item for item in items if item["path"] != str(target)]

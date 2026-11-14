@@ -1,6 +1,6 @@
 import type {
   BlockMutationResponse, BlocksResponse, BrowseResponse, CreateWorkspaceInput,
-  CreateWorkspaceResponse, DeleteViewResponse, DeleteWorkspaceResponse,
+  CreateWorkspaceResponse, DeleteViewResponse,
   ForgetWorkspaceResponse,
   OpenWorkspaceResponse, ProjectManifest, ProjectSettingsResponse,
   RecentWorkspacesResponse, SaveProjectResponse, SaveViewResponse,
@@ -125,11 +125,5 @@ export function openWorkspace(path: string): Promise<OpenWorkspaceResponse> {
 export function forgetWorkspace(path: string): Promise<ForgetWorkspaceResponse> {
   return request<ForgetWorkspaceResponse>(
     '/api/workspaces/recent?path=' + encodeURIComponent(path),
-    {method: 'DELETE'});
-}
-
-export function deleteWorkspace(path: string, confirm: string): Promise<DeleteWorkspaceResponse> {
-  const query = new URLSearchParams({path, confirm});
-  return request<DeleteWorkspaceResponse>('/api/workspaces?' + query.toString(),
     {method: 'DELETE'});
 }

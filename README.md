@@ -1,17 +1,29 @@
-# Codifold · 中文流程阅读器
+# Codifold · 中文逻辑图阅读器（Demo）
 
-**核心问题：AI 写代码的速度越来越快，人的理解跟不上。** Codifold 把项目转换成规整的中文逻辑图：先理解“程序在做什么”，需要细节时再看对应代码。
+**这是一个初期、实验性的开源 Demo。** 希望通过中文逻辑图帮助人理解程序的行为，并能随时回到对应源码核对。工具已经能够读取、校验、渲染和编辑逻辑图；怎样把一个陌生项目整理成逻辑清晰的图，仍然是尚未解决的问题。
 
-1. **逻辑抽象** —— 把具体代码抽象成逻辑图：一个算法怎么推导、在项目中如何运行、每个细节机制为什么这样取舍。
-2. **快速理解** —— 面对陌生项目，用 AI 快速转换成逻辑图：知道原理是什么、如何运行，可深可浅地建立认知。
-3. **跟上 AI 的节奏** —— AI 编程越写越快，人只需要处理逻辑思想、不陷入代码细节：既能快速巩固知识原理，也能在做项目产品时不丢失对全局的把握。
-4. **规整的逻辑图** —— 连线与排版由工具负责，JSON 语法规整：人或 AI 都能快速做出整齐的逻辑图，避免手写 Mermaid 的线条混乱、排版不齐。
+![学生成绩管理示例：主流程与源码对照](docs/screenshot-gradebook.png)
 
-![学生成绩管理示例：主流程视图（星海主题）——左侧块列表，中间分支扇出与回指线，右侧块详情与代码映射](docs/screenshot-gradebook.png)
+## 当前定位
 
-流程描述由人或外部 AI 编写成 JSON。Codifold 只负责校验、读取、渲染和编辑 JSON，不分析源码、不调用模型、不执行被讲解的项目。
+流程描述由人或外部 AI 编写成 JSON，Codifold 负责自动布局、导航、源码对照和编辑。它不调用模型，不自动理解或执行被讲解的项目；覆盖率和连贯性检查也不能证明逻辑描述正确。
 
-要把一个真实项目转换成流程，从 [docs/conversion-guide.md](docs/conversion-guide.md) 开始；它规定了入口链路画法、代码全覆盖判定和验收门禁。大项目不要手写整份最终 JSON，用 [docs/workbench.md](docs/workbench.md) 里的转换工作台：AI 只写局部草稿，工具分配 id、解析引用、写文件并整项目复检。
+目前还没有找到稳定可靠的陌生项目转换方法，纯 AI 转换的效果不稳定。现有转换指南、工作台和示例是探索材料，尚不足以证明一种通用方法已经成立。
+
+接下来的重点是：**自己边写项目边做逻辑图，记录取舍和失败画法，积累经过核对与读者反馈的案例，再从中提取规律，最后提炼成 SKILL。**
+
+- 想了解工具与方法还缺什么，先读 [当前状态与问题](docs/current-status.md)。
+- 想一起积累案例，使用 [案例记录模板](docs/case-study-template.md)。
+- 想试现有的 AI 辅助转换，参考 [实验性转换指南](docs/conversion-guide.md) 和 [转换工作台](docs/workbench.md)，逐步人工核对。
+
+## 建议的体验方式
+
+1. 打开 `gradebook-chain` 看一个完整的小示例；`taskflow` 用于观察更复杂的入口、事件和契约表达。它们展示功能，不代表已经验证了陌生项目转换效果。
+2. 新建一个独立工作区，选择你正在编写的小项目，在项目设置里声明源码文件。
+3. 每实现一条具体功能，就同步整理入口、状态变化、分支、结果与失败路径；不要急于补齐整个项目。
+4. 保存草稿并对照源码复核，完成一个阶段后再运行严格检查、记录对应提交和阅读反馈。
+
+`gradebook` 是故意保留不完整映射的教学对照，看到覆盖警告是预期现象。
 
 ## 运行
 
@@ -33,13 +45,15 @@ cd ..
 python run.py
 ```
 
-也可以把后端安装成本地命令行工具（提供 `codifold` 命令，覆盖 workbench 全部子命令）：
+也可以从仓库安装本地包（包含前端、示例和 MCP 指南，无需 Node）：
 
 ```bash
-pip install -e .
+python -m pip install .
+codifold serve
+# 或 python -m codifold serve
 ```
 
-打开 [http://127.0.0.1:5190/](http://127.0.0.1:5190/)，先进入工作区首页：列出 `examples/` 下的示例、最近打开记录，也可以直接浏览本机目录选择工作区。`/blocks` 作为兼容别名进入同一页面。
+`codifold --version` 查看版本；改端口用 `codifold serve --port 5191`。开发时可用 `python -m pip install -e .`。这里演示本地安装，不表示已经发布到 PyPI。
 
 示例包括默认的 `examples/gradebook`（学生成绩管理终端程序）和 `examples/gradebook-chain`（按运行入口链路的 10 视图版本）。源码在各自目录下，阅读器不会运行它。
 
@@ -58,6 +72,10 @@ project/
 - 只有 `files` 里声明过的文件才允许被块引用为 `code_mapping`。
 - 新工作区默认使用 flat 视图：块是平表，层级由 `containers` 表达；规范见 [docs/flat-schema.md](docs/flat-schema.md)。
 - 旧嵌套格式仍可读取，字段规范见 [docs/blocks-schema.md](docs/blocks-schema.md)。
+
+## 本机数据
+
+最近记录与写入锁放在用户状态目录：Linux 为 `$XDG_STATE_HOME/codifold`（默认 `~/.local/state/codifold`），macOS 为 `~/Library/Application Support/Codifold`，Windows 为 `%LOCALAPPDATA%/Codifold`。可用 `CODIFOLD_STATE_DIR` 指定位置；需要互相协调写入的 HTTP、CLI 和 MCP 进程应使用同一位置。旧仓库 `.codifold/workspaces.json` 会在新位置还没有记录时读取，下一次修改记录时迁移。
 
 ## 转换工作台
 
@@ -116,14 +134,14 @@ python3 -m codifold.workbench mcp
 - 旧嵌套视图保留原来的顶层块列表和分支结构编辑。
 - 新建工作区默认 flat；新建/修改/删除视图；删除入口视图时自动切换到剩余视图。
 - `next`、`jump`、`flow`、`emit`、`code_mapping` 和 `on` 都有表单；跨视图目标、代码文件和事件名使用下拉选择。
-- 保存先做结构校验，再原子写入，最后跑整项目复检；任何错误都会回滚。
+- 同一工作区写入会串行执行，覆盖版本检查、原子写入、项目复检与失败回滚。契约和引用错误阻止保存；尚未接通的视图和覆盖缺口可以作为草稿保存并返回警告。最终验收仍用 `check --strict`。
 - 保存和删除会带读取时的 `revision`。文件被其他窗口改动时返回 409，界面提示重新加载。
 - 编辑只支持带 `codifold.json` 的工作区目录；单文件 `?config=` 模式保持只读。
 
 ## 项目与工作区设置
 
 - **项目设置**：编辑模式下点侧栏项目名旁的齿轮。可改名称、描述、`root`、`files`、入口视图；`files` 可逐行增删。
-- **工作区窗口**：显示最近打开列表，可直接打开、从最近列表移除，或两步确认删除整个目录。当前工作区不能在这里删除。点“浏览…”会打开本机目录浏览器：按目录逐级进入，带 `codifold.json` 的目录会标“工作区”，可直接打开；不再需要手输路径。
+- **工作区窗口**：显示最近打开列表，可直接打开、从最近列表移除。Demo 不提供整目录删除；移除记录不影响源码或工作区文件。点“浏览…”会打开本机目录浏览器：按目录逐级进入，带 `codifold.json` 的目录会标“工作区”，可直接打开；不再需要手输路径。
 - 新建工作区默认没有声明源码文件；进入编辑模式后在“项目设置”里添加 `files`，代码映射下拉框才会出现文件。
 
 ## 外观与动效
@@ -142,7 +160,7 @@ python3 -m codifold.workbench mcp
 - `GET/POST /api/project`：读取/保存项目设置。
 - `GET /api/workspaces`、`POST /api/workspaces/open`、`POST /api/workspaces`：最近列表（含 `examples/` 示例）、打开、新建。
 - `GET /api/browse?path=<绝对目录>`：列出子目录并标记哪些是工作区；供首页和“浏览…”使用，只列目录、不读文件内容。
-- `DELETE /api/workspaces`、`DELETE /api/workspaces/recent`：删除目录、移除最近记录。
+- `DELETE /api/workspaces/recent`：移除最近记录；旧 `DELETE /api/workspaces` 返回 400，不删除目录。
 - `GET /api/events`、`GET /api/coverage`：事件名和代码覆盖率。
 
 错误统一返回 400 和 `{"error": "..."}`；修订冲突返回 409 和 `{"error", "code": "revision_conflict", "current_revision"}`。服务只接受本机 Host 和同源写请求。
@@ -151,7 +169,8 @@ python3 -m codifold.workbench mcp
 
 ```bash
 python -B -m unittest discover -s tests -q
-python3 -m codifold.validate examples/gradebook
+python3 -m codifold.workbench check examples/gradebook-chain --strict
+python3 -m codifold.workbench check examples/taskflow --strict
 cd frontend
 npm run build
 ```
@@ -184,10 +203,11 @@ docs/workbench.md             转换工作台与草稿格式
 
 前端依赖的许可信息见 [frontend/THIRD_PARTY_NOTICES.md](frontend/THIRD_PARTY_NOTICES.md)。
 
-## Roadmap
+## 探索路线
 
-- 转换方法正从“规则驱动”走向“例子驱动对齐”：用一组由浅入深的源码 → 流程示例，让 AI 通过例子学会转换；现有规则文档（[docs/conversion-guide.md](docs/conversion-guide.md) 等）降为速查表和验收口径。
-- 欢迎分享你的转换实践和想法，见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+先通过边写项目边画图积累案例，记录哪些画法有助于理解、哪些会误导；有了多次验证的经验后，再提炼规律与 SKILL。现阶段欢迎工具问题、实际阅读反馈和带过程记录的案例。
+
+格式可能继续调整，源码行号变化也可能导致图过期；目前没有自动检测源码过期或工作区迁移工具。完整限制见 [当前状态](docs/current-status.md)，改动见 [变更记录](CHANGELOG.md)。
 
 ## 许可证
 

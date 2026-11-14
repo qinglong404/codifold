@@ -6,14 +6,15 @@ an external AI (or a human) writes.
 """
 from __future__ import annotations
 
+import argparse
 import json
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from . import block_config, browse, editor, mapping_report
+from .paths import RESOURCE_ROOT
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = RESOURCE_ROOT
 DIST = ROOT / "frontend" / "dist"
 MAX_BODY_BYTES = block_config.MAX_BYTES * 2
 
@@ -204,3 +205,32 @@ def create_server(port=5190):
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     server.daemon_threads = True
     return server
+
+
+def run(port=5190):
+    if not (DIST / "index.html").is_file():
+        print("缺少前端资源：源码运行请在 frontend 目录执行 npm ci 和 npm run build；安装包请重新安装。")
+        return 1
+    try:
+        server = create_server(port)
+    except OSError as error:
+        print(f"无法启动：{error}")
+        return 1
+    print(f"Codifold Demo: http://127.0.0.1:{server.server_port}/", flush=True)
+    print("本机运行 · 读取与编辑 JSON · 不执行被讲解的项目 · Ctrl+C 停止", flush=True)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+    return 0
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Codifold Demo 中文逻辑图阅读器")
+    parser.add_argument("--port", type=int, default=5190)
+    args = parser.parse_args(argv)
+    if not 0 <= args.port <= 65535:
+        parser.error("端口必须在 0 到 65535 之间")
+    return run(args.port)

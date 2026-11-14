@@ -15,9 +15,11 @@
     "kind": "main"
   },
   "containers": [
-    {"id": "root", "kind": "root", "blocks": [1, 2]},
+    {"id": "root", "kind": "root", "blocks": [1, 2, 5]},
     {"id": "c2-0", "kind": "branch", "parent": 2, "condition": "serve", "blocks": [3]},
     {"id": "c2-1", "kind": "branch", "parent": 2, "condition": "worker", "blocks": [4]},
+    {"id": "c5-0", "kind": "branch", "parent": 5, "role": "body", "blocks": [7]},
+    {"id": "c5-1", "kind": "branch", "parent": 5, "role": "except", "condition": "发生异常", "blocks": [8]},
     {"id": "f5", "kind": "finally", "parent": 5, "blocks": [6]}
   ],
   "blocks": [
@@ -28,7 +30,9 @@
     {"id": 4, "type": "normal", "name": "worker", "description": "启动 worker"},
     {"id": 5, "type": "branch", "kind": "try", "name": "尝试", "description": "异常结构",
      "select": "single", "branches": ["c5-0", "c5-1"], "finally": "f5"},
-    {"id": 6, "type": "normal", "name": "收尾", "description": "清理"}
+    {"id": 6, "type": "normal", "name": "收尾", "description": "清理"},
+    {"id": 7, "type": "normal", "name": "处理", "description": "执行受保护操作"},
+    {"id": 8, "type": "normal", "name": "记录失败", "description": "处理异常"}
   ]
 }
 ```

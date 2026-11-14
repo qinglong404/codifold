@@ -1,5 +1,7 @@
 # Codifold — 中文逻辑可视化编程理解平台
 
+> **历史设计草稿，不代表当前实现。** 当前状态见 [current-status.md](../current-status.md)，现行格式见 [flat-schema.md](../flat-schema.md) 和 [blocks-schema.md](../blocks-schema.md)。
+
 **产品设计草稿 V0.3**
 
 **定位：** 将真实代码转换为可递归展开、可追溯、可编辑的中文逻辑结构，帮助用户理解、学习并控制 AI 生成的软件。

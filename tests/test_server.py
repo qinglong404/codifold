@@ -318,11 +318,14 @@ class ServerTests(unittest.TestCase):
                     method="DELETE")
             self.assertEqual(error.exception.code, 400)
             self.assertTrue(target.is_dir())
-            result = self.request_json(
-                f"/api/workspaces?path={quote(str(target))}"
-                f"&confirm={quote(str(target.resolve()))}", method="DELETE")
-            self.assertEqual(result["deleted"], str(target.resolve()))
-            self.assertFalse(target.exists())
+            source = target / "app.py"
+            source.write_text("keep me", encoding="utf-8")
+            with self.assertRaises(HTTPError) as error:
+                self.request_json(
+                    f"/api/workspaces?path={quote(str(target))}"
+                    f"&confirm={quote(str(target.resolve()))}", method="DELETE")
+            self.assertEqual(error.exception.code, 400)
+            self.assertEqual(source.read_text(encoding="utf-8"), "keep me")
 
     def test_project_settings_reject_unknown_entry(self):
         with tempfile.TemporaryDirectory() as temp:

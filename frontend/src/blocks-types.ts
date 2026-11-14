@@ -170,7 +170,6 @@ export type BrowseResponse = {
   shortcuts: BrowseShortcut[];
 };
 export type OpenWorkspaceResponse = {index: ViewsIndex; manifest: ProjectManifest};
-export type DeleteWorkspaceResponse = {deleted: string; recent: RecentWorkspace[]};
 export type ForgetWorkspaceResponse = {recent: RecentWorkspace[]};
 export type CreateWorkspaceInput = {
   directory: string;

@@ -336,7 +336,7 @@ class EditorTests(unittest.TestCase):
             recent = editor.recent_workspaces()["recent"]
             self.assertEqual([item["name"] for item in recent], ["测试项目"])
 
-    def test_delete_workspace_requires_confirmation_and_removes_recent(self):
+    def test_delete_workspace_is_disabled_and_forget_preserves_files(self):
         target = self.directory / "to-delete"
         editor.create_workspace(str(target), "待删项目", "描述")
         state = self.directory / "state"
@@ -345,12 +345,17 @@ class EditorTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 editor.delete_workspace(str(target), str(self.directory))
             self.assertTrue(target.is_dir())
-            result = editor.delete_workspace(str(target), str(target.resolve()))
-            self.assertEqual(result["deleted"], str(target.resolve()))
-            self.assertFalse(target.exists())
+            source = target / "app.py"
+            source.write_text("valuable source\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "不提供整目录删除"):
+                editor.delete_workspace(str(target), str(target.resolve()))
+            editor.forget_workspace(str(target))
+            self.assertEqual(source.read_text(encoding="utf-8"), "valuable source\n")
+            self.assertTrue((target / "codifold.json").is_file())
+            self.assertTrue((target / "main.blocks.json").is_file())
             self.assertEqual(editor.recent_workspaces()["recent"], [])
 
-    def test_delete_workspace_allows_broken_manifest(self):
+    def test_delete_workspace_preserves_broken_workspace(self):
         target = self.directory / "broken"
         target.mkdir()
         (target / "codifold.json").write_text(json.dumps({
@@ -360,9 +365,9 @@ class EditorTests(unittest.TestCase):
         }), encoding="utf-8")
         state = self.directory / "state"
         with mock.patch.dict(os.environ, {"CODIFOLD_STATE_DIR": str(state)}):
-            result = editor.delete_workspace(str(target), str(target.resolve()))
-        self.assertEqual(result["deleted"], str(target.resolve()))
-        self.assertFalse(target.exists())
+            with self.assertRaisesRegex(ValueError, "不提供整目录删除"):
+                editor.delete_workspace(str(target), str(target.resolve()))
+        self.assertTrue(target.exists())
 
     def test_delete_workspace_refuses_git_and_non_workspace(self):
         target = self.directory / "git-project"
@@ -370,18 +375,15 @@ class EditorTests(unittest.TestCase):
         (target / ".git").mkdir()
         with self.assertRaises(ValueError) as error:
             editor.delete_workspace(str(target), str(target.resolve()))
-        self.assertIn(".git", str(error.exception))
+        self.assertIn("不提供整目录删除", str(error.exception))
         self.assertTrue(target.is_dir())
         with self.assertRaises(ValueError):
             editor.delete_workspace(str(self.directory), str(self.directory.resolve()))
 
-    def test_delete_workspace_guard_rejects_repo_and_top_level(self):
-        with self.assertRaises(ValueError):
-            editor._guard_delete(block_config.ROOT)
-        with self.assertRaises(ValueError):
-            editor._guard_delete(Path("/tmp"))
-        with self.assertRaises(ValueError):
-            editor._guard_delete(Path.home().resolve())
+    def test_delete_workspace_refuses_any_directory(self):
+        for target in (block_config.ROOT, Path("/tmp"), Path.home()):
+            with self.assertRaisesRegex(ValueError, "不提供整目录删除"):
+                editor.delete_workspace(str(target), str(target))
 
     def write_source(self, name="app.py"):
         (self.directory / name).write_text(

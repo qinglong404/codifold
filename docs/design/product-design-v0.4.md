@@ -1,5 +1,7 @@
 # Codifold V0.4 — 新增功能与开发约定
 
+> **历史设计草稿，不代表当前实现。** 当前状态见 [current-status.md](../current-status.md)，现行格式见 [flat-schema.md](../flat-schema.md) 和 [blocks-schema.md](../blocks-schema.md)。
+
 ## 1. 基础设计原则
 
 Codifold 是将真实代码转换为中文语义逻辑视图的工具。

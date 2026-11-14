@@ -1,3 +1,3 @@
-"""Codifold: source-backed, local Python function-flow analysis."""
+"""Codifold: an experimental local reader/editor for Chinese logic diagrams."""
 
-__version__ = "0.3.0"
+__version__ = "0.1.0"

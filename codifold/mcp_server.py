@@ -19,14 +19,16 @@ from pathlib import Path
 
 from . import checks, draft, editor, export_md, flat, narrative, project_config
 from .brief import collect_brief
+from . import __version__
+from .paths import RESOURCE_ROOT
 
 SERVER_NAME = "codifold-workbench"
-SERVER_VERSION = "0.1.0"
+SERVER_VERSION = __version__
 PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26", "2024-11-05")
 DEFAULT_PROTOCOL = PROTOCOL_VERSIONS[0]
-DOCS_DIR = Path(__file__).resolve().parent.parent / "docs"
+DOCS_DIR = RESOURCE_ROOT / "docs"
 
-INSTRUCTIONS = """Codifold 转换工作台。工作区必须是含 codifold.json 的目录；工具只读写工作区 JSON，不分析、不执行被讲解的源码。
+INSTRUCTIONS = """Codifold 初期 Demo 转换工作台。陌生项目如何转换成清晰逻辑图仍在探索；优先边写项目边维护逻辑图，积累经人工核对的案例。机械检查通过不代表语义正确。工作区必须是含 codifold.json 的目录；工具只读写工作区 JSON，不分析、不执行被讲解的源码。
 
 推荐顺序：
 1. codifold_brief：读取覆盖率、视图清单和一个视图的块结构；
@@ -375,16 +377,16 @@ def _tool_apply(args: dict) -> dict:
     if "draft" not in args:
         raise ValueError("缺少 draft（视图草稿）")
     specs = draft.normalize_drafts(_draft_value(args["draft"]))
-    configs = draft.compile_drafts(str(workspace), specs)
     dry_run = _bool_arg(args, "dry_run", True)
     if dry_run:
+        configs = draft.compile_drafts(str(workspace), specs)
         manifest = project_config.load_manifest(workspace)
         if manifest is not None and manifest.get("format") == "flat":
             configs = [flat.from_nested(config) for config in configs]
         payload = configs[0] if len(configs) == 1 else {"views": configs}
         return _json_result({"dry_run": True, "payload": payload})
-    result = editor.save_views(
-        str(workspace), configs, strict=_bool_arg(args, "strict", False))
+    result = editor.apply_drafts(
+        str(workspace), specs, strict=_bool_arg(args, "strict", False))
     return _json_result({
         "dry_run": False,
         "created": result["created"],

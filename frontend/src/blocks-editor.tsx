@@ -5,7 +5,7 @@ import {
   Plus, Save, Trash2, X,
 } from 'lucide-react';
 import {
-  browseDirectory, createWorkspace, deleteWorkspace, fetchEvents, fetchProject,
+  browseDirectory, createWorkspace, fetchEvents, fetchProject,
   fetchRecentWorkspaces, fetchView, forgetWorkspace,
   openWorkspace as openWorkspaceApi, saveProject,
 } from './blocks-api';
@@ -1192,7 +1192,6 @@ export function WorkspaceDialog({currentPath, initialBrowse, initialTab, onOpen,
   const [recent, setRecent] = useState<RecentWorkspace[]>([]);
   const [recentLoading, setRecentLoading] = useState(true);
   const [recentError, setRecentError] = useState('');
-  const [deleteTarget, setDeleteTarget] = useState<RecentWorkspace>();
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -1304,44 +1303,7 @@ export function WorkspaceDialog({currentPath, initialBrowse, initialTab, onOpen,
     }
   }
 
-  async function removeWorkspace() {
-    if (!deleteTarget) return;
-    setError('');
-    setNotice('');
-    setBusy(true);
-    try {
-      const result = await deleteWorkspace(deleteTarget.path, deleteTarget.path);
-      setRecent(result.recent);
-      setNotice(`已删除工作区：${deleteTarget.name || deleteTarget.path}`);
-      setDeleteTarget(undefined);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const current = deleteTarget;
-  return <Modal title={current ? '删除工作区' : '工作区'} onClose={onClose}>
-    {current ? <div className="workspace-delete-confirm">
-      <span className="workspace-delete-icon"><Trash2 size={22} /></span>
-      <h3>确定永久删除这个工作区？</h3>
-      <code>{current.path}</code>
-      <p>目录里的 codifold.json、视图文件和源码会一起删除，无法撤销。</p>
-      {current.path === currentPath && <p className="editor-error">
-        不能删除当前正在使用的工作区，请先切换到其他工作区。
-      </p>}
-      <ErrorLine error={error} />
-      <div className="dialog-actions">
-        <button type="button" className="subtle-button"
-          onClick={() => {setDeleteTarget(undefined); setError('');}}>取消</button>
-        <button type="button" className="danger-button"
-          disabled={busy || current.path === currentPath}
-          onClick={() => void removeWorkspace()}>
-          <Trash2 size={14} />{busy ? '删除中…' : '永久删除目录'}
-        </button>
-      </div>
-    </div> : <>
+  return <Modal title="工作区" onClose={onClose}>
       <div className="editor-tabs" role="tablist">
         <button type="button" role="tab" aria-selected={tab === 'open'}
           className={tab === 'open' ? 'active' : ''}
@@ -1438,18 +1400,6 @@ export function WorkspaceDialog({currentPath, initialBrowse, initialTab, onOpen,
                                 onClick={() => void forgetRecent(item)}>
                                 <X size={13} />
                               </button>
-                              <button type="button" className="danger" title={
-                                item.path === currentPath ? '不能删除当前工作区'
-                                  : !item.exists ? '目录不存在' : '删除工作区目录'}
-                                aria-label={`删除工作区 ${item.name || item.path}`}
-                                disabled={busy || !item.exists || item.path === currentPath}
-                                onClick={() => {
-                                  setDeleteTarget(item);
-                                  setError('');
-                                  setNotice('');
-                                }}>
-                                <Trash2 size={13} />
-                              </button>
                             </div>
                           </div>)}
                         </div>
@@ -1507,7 +1457,6 @@ export function WorkspaceDialog({currentPath, initialBrowse, initialTab, onOpen,
               </button>
             </div>
           </form>}
-    </>}
   </Modal>;
 }
 

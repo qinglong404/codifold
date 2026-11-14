@@ -1,7 +1,7 @@
 {
   "name": "codifold",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Local Chinese flow reader and editor for JSON-described projects.",
   "type": "module",
   "scripts": {"dev": "vite --host 127.0.0.1", "build": "tsc -b && vite build"},

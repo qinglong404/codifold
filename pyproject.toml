@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "codifold"
-version = "1.0.0"
-description = "把项目转换成可读的中文流程与静态契约（本地优先，只读写 JSON）"
+dynamic = ["version"]
+description = "实验性的中文逻辑图阅读器与编辑器（本地优先 Demo）"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -13,7 +13,7 @@ license-files = ["LICENSE"]
 authors = [{ name = "likefeng" }]
 keywords = ["code-reading", "flowchart", "documentation", "chinese"]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Natural Language :: Chinese (Simplified)",
     "Operating System :: OS Independent",
@@ -29,5 +29,12 @@ classifiers = [
 [project.scripts]
 codifold = "codifold.workbench:main"
 
+[project.urls]
+Repository = "https://github.com/qinglong404/codifold"
+Issues = "https://github.com/qinglong404/codifold/issues"
+
 [tool.setuptools]
 packages = ["codifold"]
+
+[tool.setuptools.dynamic]
+version = {attr = "codifold.__version__"}
