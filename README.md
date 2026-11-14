@@ -2,6 +2,8 @@
 
 把项目浓缩成少量汉语步骤，再按需展开。先理解“程序在做什么”，需要细节时再看对应代码。
 
+![学生成绩管理示例：主流程视图——左侧块列表，中间分支扇出与回指线，右侧块详情与代码映射](docs/screenshot-gradebook.png)
+
 流程描述由人或外部 AI 编写成 JSON。Codifold 只负责校验、读取、渲染和编辑 JSON，不分析源码、不调用模型、不执行被讲解的项目。
 
 要把一个真实项目转换成流程，从 [docs/conversion-guide.md](docs/conversion-guide.md) 开始；它规定了入口链路画法、代码全覆盖判定和验收门禁。大项目不要手写整份最终 JSON，用 [docs/workbench.md](docs/workbench.md) 里的转换工作台：AI 只写局部草稿，工具分配 id、解析引用、写文件并整项目复检。
