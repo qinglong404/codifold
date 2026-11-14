@@ -185,11 +185,11 @@ class FlatEditorTests(unittest.TestCase):
         draft_path = self.base / "draft.json"
         draft_path.write_text(json.dumps(draft, ensure_ascii=False),
                               encoding="utf-8")
-        with open("/dev/null", "w") as sink:
-            import contextlib
-            with contextlib.redirect_stdout(sink):
-                self.assertEqual(workbench.main(
-                    ["apply", str(target), str(draft_path)]), 0)
+        import contextlib
+        import io
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(workbench.main(
+                ["apply", str(target), str(draft_path)]), 0)
         raw = json.loads((target / "extra.blocks.json").read_text(encoding="utf-8"))
         self.assertIn("containers", raw)
 
