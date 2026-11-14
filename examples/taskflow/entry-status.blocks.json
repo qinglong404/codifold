@@ -1,0 +1,267 @@
+{
+  "view": {
+    "id": "entry-status",
+    "name": "status：查询任务与统计",
+    "description": "这一章看只读查询：用户既可以按 id 看一条任务，也可以按状态列出任务并附带计数；两条路都不会修改数据。",
+    "kind": "entry"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        27,
+        28,
+        29,
+        39
+      ]
+    },
+    {
+      "id": "c29-0",
+      "kind": "branch",
+      "parent": 29,
+      "blocks": [
+        30,
+        37
+      ],
+      "role": "body"
+    },
+    {
+      "id": "c30-0",
+      "kind": "branch",
+      "parent": 30,
+      "blocks": [
+        31,
+        32
+      ],
+      "condition": "指定了任务 id"
+    },
+    {
+      "id": "c32-0",
+      "kind": "branch",
+      "parent": 32,
+      "blocks": [
+        33
+      ],
+      "condition": "任务不存在"
+    },
+    {
+      "id": "c32-1",
+      "kind": "branch",
+      "parent": 32,
+      "blocks": [
+        34
+      ],
+      "condition": "任务存在"
+    },
+    {
+      "id": "c30-1",
+      "kind": "branch",
+      "parent": 30,
+      "blocks": [
+        35,
+        36
+      ],
+      "condition": "没有指定任务 id"
+    },
+    {
+      "id": "f29",
+      "kind": "finally",
+      "parent": 29,
+      "blocks": [
+        38
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "id": 27,
+      "type": "normal",
+      "name": "status 入口",
+      "description": "用户执行 taskflow status 时进入这里，拿到可选的单任务 id、状态过滤和条数限制。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          157
+        ]
+      }
+    },
+    {
+      "id": 28,
+      "type": "normal",
+      "name": "打开存储",
+      "description": "查询同样需要数据库连接；这里复用线程本地连接。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          158
+        ]
+      }
+    },
+    {
+      "id": 29,
+      "type": "branch",
+      "name": "在存储生命周期内查询",
+      "description": "进入一段带收尾的流程，查询结束后由最后一步关闭存储。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          159,
+          173
+        ]
+      },
+      "kind": "try",
+      "select": "single",
+      "branches": [
+        "c29-0"
+      ],
+      "finally": "f29"
+    },
+    {
+      "id": 30,
+      "type": "branch",
+      "name": "用户指定了任务 id 吗？",
+      "description": "指定了就看单条任务，没指定就列出一批任务；两条路的输出结构不同。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          160,
+          166
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c30-0",
+        "c30-1"
+      ]
+    },
+    {
+      "id": 31,
+      "type": "normal",
+      "name": "按 id 读取任务",
+      "description": "调用存储的读取方法；找不到时返回空值，而不是抛异常。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          161
+        ]
+      },
+      "jump": {
+        "id": 14,
+        "view": "fn-storage"
+      }
+    },
+    {
+      "id": 32,
+      "type": "branch",
+      "name": "任务存在吗？",
+      "description": "查询结果为空说明 id 不存在，需要给用户明确的错误。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          162
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c32-0",
+        "c32-1"
+      ]
+    },
+    {
+      "id": 33,
+      "type": "normal",
+      "name": "不存在：打印错误并退出 1",
+      "description": "任务 id 不存在属于用户输入问题，直接结束，不输出空结果。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          163,
+          164
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 34,
+      "type": "normal",
+      "name": "组装单任务结果",
+      "description": "把任务序列化成单任务结构，准备统一打印。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          165
+        ]
+      }
+    },
+    {
+      "id": 35,
+      "type": "normal",
+      "name": "按状态查询任务列表",
+      "description": "状态参数为空时不过滤；条数参数控制最多返回多少条；细节见 fn-storage。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          167
+        ]
+      },
+      "jump": {
+        "id": 15,
+        "view": "fn-storage"
+      }
+    },
+    {
+      "id": 36,
+      "type": "normal",
+      "name": "组装统计与列表",
+      "description": "列表查询会同时返回各状态计数和任务数组，输出结构里既有 stats 也有 jobs。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "168-171"
+        ]
+      },
+      "jump": {
+        "id": 17,
+        "view": "fn-storage"
+      }
+    },
+    {
+      "id": 37,
+      "type": "normal",
+      "name": "打印结果",
+      "description": "两条路最后都汇合到这里：把结果以缩进 JSON 输出。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          172
+        ]
+      }
+    },
+    {
+      "id": 38,
+      "type": "normal",
+      "name": "关闭存储",
+      "description": "查询结束，释放当前线程的数据库连接。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          174
+        ]
+      }
+    },
+    {
+      "id": 39,
+      "type": "normal",
+      "name": "成功退出",
+      "description": "结果打印完成，status 返回 0。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          175
+        ]
+      },
+      "next": null
+    }
+  ]
+}

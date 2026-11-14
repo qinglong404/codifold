@@ -1,0 +1,48 @@
+{
+  "view": {
+    "id": "mod-config",
+    "name": "配置模块的定义",
+    "description": "这一章看配置模块的声明和默认配置类型；具体如何合并和校验在 fn-load-settings。",
+    "kind": "struct"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        5,
+        6
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "id": 5,
+      "type": "normal",
+      "name": "模块声明",
+      "description": "文件开头只导入标准库，说明配置模块不依赖其他业务模块。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          1,
+          2,
+          "4-8"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 6,
+      "type": "normal",
+      "name": "默认配置类型",
+      "description": "定义数据库路径、监听地址、worker 数、租约和轮询间隔、调度间隔、令牌和插件包；所有配置最终都归一到这个类型。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          "11-23"
+        ]
+      },
+      "next": null
+    }
+  ]
+}

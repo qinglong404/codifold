@@ -1,0 +1,200 @@
+{
+  "view": {
+    "id": "fn-registry-step",
+    "name": "注册装饰器：步骤与订阅者如何登记",
+    "description": "这一章看两个装饰器：step 把处理函数登记成可执行步骤，on 把处理函数登记成事件订阅者；它们只写全局表，不改变函数本身。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        11,
+        12,
+        17,
+        18,
+        19,
+        20
+      ]
+    },
+    {
+      "id": "c12-0",
+      "kind": "branch",
+      "parent": 12,
+      "blocks": [
+        13
+      ],
+      "condition": "步骤名重复"
+    },
+    {
+      "id": "c12-1",
+      "kind": "branch",
+      "parent": 12,
+      "blocks": [
+        14
+      ],
+      "condition": "步骤名不重复"
+    },
+    {
+      "id": "c14-0",
+      "kind": "branch",
+      "parent": 14,
+      "blocks": [
+        15
+      ],
+      "condition": "重试参数非法"
+    },
+    {
+      "id": "c14-1",
+      "kind": "branch",
+      "parent": 14,
+      "blocks": [
+        16
+      ],
+      "condition": "重试参数合法"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 11,
+      "type": "normal",
+      "name": "先看步骤注册",
+      "description": "按名字把处理函数写进步骤表；名字就是流水线计划里使用的步骤名。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          "31-33"
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "type": "branch",
+      "name": "名字重复了吗？",
+      "description": "同名步骤会让计划无法确定调用谁，所以必须在注册时拒绝。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          34,
+          35
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c12-0",
+        "c12-1"
+      ]
+    },
+    {
+      "id": 13,
+      "type": "normal",
+      "name": "重复：报错",
+      "description": "抛出参数错误，提示这个步骤名已经被占用。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          36
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 14,
+      "type": "branch",
+      "name": "检查重试参数",
+      "description": "重试次数和退避基数都必须是正数或零。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          37
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c14-0",
+        "c14-1"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "normal",
+      "name": "非法：报错",
+      "description": "负数重试或负数退避没有意义，直接拒绝注册。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          38
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 16,
+      "type": "normal",
+      "name": "写入步骤表",
+      "description": "保存处理函数、重试参数和描述；描述省略时取函数的文档字符串。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          39,
+          40
+        ]
+      }
+    },
+    {
+      "id": 17,
+      "type": "normal",
+      "name": "返回原函数",
+      "description": "装饰器不包装函数，只做登记；下一节换一个装饰器，看订阅者如何注册。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          41,
+          42
+        ]
+      },
+      "next": 18
+    },
+    {
+      "id": 18,
+      "type": "normal",
+      "name": "再看订阅注册",
+      "description": "按事件主题登记处理函数；同一主题可以有多个订阅者。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          45,
+          46
+        ]
+      }
+    },
+    {
+      "id": 19,
+      "type": "normal",
+      "name": "追加到订阅列表",
+      "description": "这里只记录关系；真正的挂载发生在加载插件之后。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          47,
+          48,
+          49
+        ]
+      }
+    },
+    {
+      "id": 20,
+      "type": "normal",
+      "name": "返回原函数",
+      "description": "订阅者函数本身保持不变，可以被直接调用。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          50
+        ]
+      },
+      "next": null
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "project": {
+    "name": "Taskflow 任务编排服务",
+    "description": "从命令行与 HTTP 入口追踪任务创建、worker 领取、流水线执行、调度维护与事件总线。",
+    "root": "."
+  },
+  "files": [
+    "run.py",
+    "taskflow/__init__.py",
+    "taskflow/__main__.py",
+    "taskflow/cli.py",
+    "taskflow/config.py",
+    "taskflow/storage.py",
+    "taskflow/pipeline.py",
+    "taskflow/worker.py",
+    "taskflow/api.py",
+    "taskflow/registry.py",
+    "taskflow/events.py",
+    "taskflow/plugins/__init__.py",
+    "taskflow/plugins/csv_source.py",
+    "taskflow/plugins/report.py",
+    "taskflow/plugins/notify.py",
+    "taskflow/plugins/maintenance.py"
+  ],
+  "views": {
+    "suffix": ".blocks.json",
+    "entry": "main",
+    "format": "flat"
+  }
+}

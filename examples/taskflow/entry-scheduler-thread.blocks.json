@@ -1,0 +1,173 @@
+{
+  "view": {
+    "id": "entry-scheduler-thread",
+    "name": "调度器线程内部：定时维护",
+    "description": "这一章看调度器线程如何按固定间隔做维护：重置过期租约、标记耗尽任务、清理历史记录，并且保证单次失败不会拖垮整个线程。",
+    "kind": "entry"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        17,
+        18,
+        19
+      ]
+    },
+    {
+      "id": "c19-0",
+      "kind": "branch",
+      "parent": 19,
+      "blocks": [
+        20,
+        23
+      ],
+      "condition": "还没收到停止信号"
+    },
+    {
+      "id": "c20-0",
+      "kind": "branch",
+      "parent": 20,
+      "blocks": [
+        21
+      ],
+      "role": "body"
+    },
+    {
+      "id": "c20-1",
+      "kind": "branch",
+      "parent": 20,
+      "blocks": [
+        22
+      ],
+      "condition": "维护过程中抛异常",
+      "role": "except"
+    },
+    {
+      "id": "c19-1",
+      "kind": "branch",
+      "parent": 19,
+      "blocks": [
+        24
+      ],
+      "condition": "已经收到停止信号"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 17,
+      "type": "normal",
+      "name": "线程开始运行",
+      "description": "调度线程启动后进入运行入口，和 worker 一样在后台循环。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          115
+        ]
+      }
+    },
+    {
+      "id": 18,
+      "type": "normal",
+      "name": "记录启动日志",
+      "description": "先确认调度器已经启动。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          116
+        ]
+      }
+    },
+    {
+      "id": 19,
+      "type": "branch",
+      "name": "收到停止信号了吗？",
+      "description": "每轮先检查停止开关；置位后退出循环，不再执行维护。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          117
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c19-0",
+        "c19-1"
+      ]
+    },
+    {
+      "id": 20,
+      "type": "branch",
+      "name": "执行一轮维护",
+      "description": "调用一次维护函数；这一轮里的任何异常都只记录，不会让线程退出。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          118
+        ]
+      },
+      "kind": "try",
+      "select": "single",
+      "branches": [
+        "c20-0",
+        "c20-1"
+      ]
+    },
+    {
+      "id": 21,
+      "type": "normal",
+      "name": "调用 tick",
+      "description": "维护函数依次做三件事：重置过期任务、标记耗尽任务、清理历史任务。细节见 fn-scheduler-tick。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          119
+        ]
+      },
+      "jump": {
+        "id": 29,
+        "view": "fn-scheduler-tick"
+      }
+    },
+    {
+      "id": 22,
+      "type": "normal",
+      "name": "记录失败，继续下一轮",
+      "description": "把异常写进日志后吞掉；下一轮仍会照常执行，避免一次数据库抖动导致调度器永久停止。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          120,
+          121
+        ]
+      }
+    },
+    {
+      "id": 23,
+      "type": "normal",
+      "name": "等待下一轮",
+      "description": "按配置的间隔等待；等待期间如果收到停止信号，会立刻醒来。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          122
+        ]
+      },
+      "next": 19
+    },
+    {
+      "id": 24,
+      "type": "normal",
+      "name": "记录停止日志并结束",
+      "description": "打印停止日志后线程退出。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          123
+        ]
+      },
+      "next": null
+    }
+  ]
+}

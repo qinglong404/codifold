@@ -1,0 +1,282 @@
+{
+  "view": {
+    "id": "fn-runtime-control",
+    "name": "运行期控制：信号、等待、关闭",
+    "description": "这一章包含三个控制函数：安装信号处理、等待停止信号、按依赖顺序关闭所有组件。serve 和 worker 两个入口都复用它们。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        40,
+        41,
+        42,
+        43,
+        44,
+        47,
+        50,
+        53,
+        54,
+        55
+      ]
+    },
+    {
+      "id": "c44-0",
+      "kind": "branch",
+      "parent": 44,
+      "blocks": [
+        45
+      ],
+      "condition": "有 HTTP 服务"
+    },
+    {
+      "id": "c44-1",
+      "kind": "branch",
+      "parent": 44,
+      "blocks": [
+        46
+      ],
+      "condition": "没有 HTTP 服务"
+    },
+    {
+      "id": "c47-0",
+      "kind": "branch",
+      "parent": 47,
+      "blocks": [
+        48
+      ],
+      "condition": "有独立 HTTP 线程"
+    },
+    {
+      "id": "c47-1",
+      "kind": "branch",
+      "parent": 47,
+      "blocks": [
+        49
+      ],
+      "condition": "没有独立 HTTP 线程"
+    },
+    {
+      "id": "c50-0",
+      "kind": "branch",
+      "parent": 50,
+      "blocks": [
+        51
+      ],
+      "condition": "调度器启动过"
+    },
+    {
+      "id": "c50-1",
+      "kind": "branch",
+      "parent": 50,
+      "blocks": [
+        52
+      ],
+      "condition": "调度器没有启动"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 40,
+      "type": "normal",
+      "name": "第一节：安装信号处理",
+      "description": "只在主线程注册；收到 Ctrl-C 或 SIGTERM 时记录日志并置位共享停止事件。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "65-67",
+          "69-71",
+          "73-74"
+        ]
+      },
+      "next": 41
+    },
+    {
+      "id": 41,
+      "type": "normal",
+      "name": "第二节：等待停止",
+      "description": "主线程每秒检查一次停止事件，直到它被置位；这样既不会忙等，也能及时响应。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "77-79"
+        ]
+      },
+      "next": 42
+    },
+    {
+      "id": 42,
+      "type": "normal",
+      "name": "第三节：统一关闭",
+      "description": "关闭流程先置位停止事件，再按依赖顺序停 HTTP、调度器、worker，最后关存储；顺序错了会留下悬挂线程。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          82,
+          83
+        ]
+      }
+    },
+    {
+      "id": 43,
+      "type": "normal",
+      "name": "先通知所有线程停止",
+      "description": "停止事件一置位，所有等待中的线程都会醒来。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          84
+        ]
+      }
+    },
+    {
+      "id": 44,
+      "type": "branch",
+      "name": "有 HTTP 服务吗？",
+      "description": "只有 serve 模式会创建 HTTP 服务。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          85
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c44-0",
+        "c44-1"
+      ]
+    },
+    {
+      "id": 45,
+      "type": "normal",
+      "name": "停 HTTP 并释放端口",
+      "description": "停止服务循环，让监听端口尽快释放。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          86,
+          87
+        ]
+      }
+    },
+    {
+      "id": 46,
+      "type": "normal",
+      "name": "没有：跳过",
+      "description": "worker、enqueue 等模式没有 HTTP。"
+    },
+    {
+      "id": 47,
+      "type": "branch",
+      "name": "有独立的 HTTP 线程吗？",
+      "description": "serve 会把 HTTP 服务放进单独线程，需要等它退出。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          88
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c47-0",
+        "c47-1"
+      ]
+    },
+    {
+      "id": 48,
+      "type": "normal",
+      "name": "等 HTTP 线程退出",
+      "description": "最多等 3 秒，避免关闭流程被卡住。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          89
+        ]
+      }
+    },
+    {
+      "id": 49,
+      "type": "normal",
+      "name": "没有：跳过",
+      "description": "没有独立线程可等。"
+    },
+    {
+      "id": 50,
+      "type": "branch",
+      "name": "调度器启动过吗？",
+      "description": "只等待真正启动过的调度线程。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          90
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c50-0",
+        "c50-1"
+      ]
+    },
+    {
+      "id": 51,
+      "type": "normal",
+      "name": "等调度器退出",
+      "description": "最多等 5 秒。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          91
+        ]
+      }
+    },
+    {
+      "id": 52,
+      "type": "normal",
+      "name": "没有：跳过",
+      "description": "未启用调度器。"
+    },
+    {
+      "id": 53,
+      "type": "normal",
+      "name": "等所有 worker 退出",
+      "description": "逐个等待，最多 10 秒；worker 会在当前任务处理完后退出。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "92-94"
+        ]
+      }
+    },
+    {
+      "id": 54,
+      "type": "normal",
+      "name": "最后关闭存储",
+      "description": "所有使用存储的线程都停了，才能安全关闭连接；细节见 fn-storage。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          95
+        ]
+      },
+      "jump": {
+        "id": 19,
+        "view": "fn-storage"
+      }
+    },
+    {
+      "id": 55,
+      "type": "normal",
+      "name": "关闭完成",
+      "description": "记录关闭完成日志，关闭流程结束。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          96
+        ]
+      },
+      "next": null
+    }
+  ]
+}

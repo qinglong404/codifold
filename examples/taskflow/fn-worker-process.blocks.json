@@ -1,0 +1,278 @@
+{
+  "view": {
+    "id": "fn-worker-process",
+    "name": "worker 处理一条任务：领取、执行、收尾",
+    "description": "这一章展开 worker 的单任务处理：先原子领取，再发布开始事件、启动续租线程、执行流水线，最后写回结果。上半部分是领取，下半部分是处理。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        29,
+        30,
+        31,
+        34,
+        35,
+        36,
+        37,
+        41,
+        42
+      ]
+    },
+    {
+      "id": "c31-0",
+      "kind": "branch",
+      "parent": 31,
+      "blocks": [
+        32
+      ],
+      "condition": "没有领到任务"
+    },
+    {
+      "id": "c31-1",
+      "kind": "branch",
+      "parent": 31,
+      "blocks": [
+        33
+      ],
+      "condition": "领到了任务"
+    },
+    {
+      "id": "c37-0",
+      "kind": "branch",
+      "parent": 37,
+      "blocks": [
+        38
+      ],
+      "role": "body"
+    },
+    {
+      "id": "c37-1",
+      "kind": "branch",
+      "parent": 37,
+      "blocks": [
+        39
+      ],
+      "condition": "流水线抛出未捕获异常",
+      "role": "except"
+    },
+    {
+      "id": "f37",
+      "kind": "finally",
+      "parent": 37,
+      "blocks": [
+        40
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "id": 29,
+      "type": "normal",
+      "name": "第一节：领取一条任务",
+      "description": "单次处理只做一件事：尝试从存储里原子地领一条任务；领到返回真，没领到返回假。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          56
+        ]
+      }
+    },
+    {
+      "id": 30,
+      "type": "normal",
+      "name": "原子领取",
+      "description": "存储会在写事务里挑选排队中或租约过期的任务，并立即标记为运行中；细节见 fn-storage-claim。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          57
+        ]
+      },
+      "jump": {
+        "id": 25,
+        "view": "fn-storage-claim"
+      }
+    },
+    {
+      "id": 31,
+      "type": "branch",
+      "name": "领到了吗？",
+      "description": "没有任务时 worker 不应该空转占用 CPU。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          58
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c31-0",
+        "c31-1"
+      ]
+    },
+    {
+      "id": 32,
+      "type": "normal",
+      "name": "没有：返回假",
+      "description": "调用方会按轮询间隔等待，稍后再试。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          59
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 33,
+      "type": "normal",
+      "name": "领到了：进入处理",
+      "description": "任务已经归当前 worker 所有，接下来执行它的流水线。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          60
+        ]
+      }
+    },
+    {
+      "id": 34,
+      "type": "normal",
+      "name": "第二节：处理任务",
+      "description": "处理函数负责一次完整的任务执行：发布开始事件、续租、执行、收尾。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          63
+        ]
+      }
+    },
+    {
+      "id": 35,
+      "type": "normal",
+      "name": "发布 job.started",
+      "description": "告诉事件总线：某个 worker 开始处理某条任务，带上任务 id、类型、worker 名和尝试次数。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          "64-67"
+        ]
+      },
+      "jump": {
+        "id": 29,
+        "view": "fn-registry-load"
+      }
+    },
+    {
+      "id": 36,
+      "type": "normal",
+      "name": "启动续租线程",
+      "description": "任务执行可能很久，需要 LeaseKeeper 定期延长租约，避免被调度器误判为过期；线程内部见 entry-leasekeeper-thread。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          68,
+          69
+        ]
+      },
+      "flow": {
+        "id": 15,
+        "view": "entry-leasekeeper-thread"
+      }
+    },
+    {
+      "id": 37,
+      "type": "branch",
+      "name": "执行流水线",
+      "description": "把任务交给流水线；无论成功、失败还是崩溃，都要先停掉续租线程。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          70,
+          75
+        ]
+      },
+      "kind": "try",
+      "select": "single",
+      "branches": [
+        "c37-0",
+        "c37-1"
+      ],
+      "finally": "f37"
+    },
+    {
+      "id": 38,
+      "type": "normal",
+      "name": "调用流水线",
+      "description": "流水线按任务计划逐个步骤执行；细节见 fn-pipeline。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          71
+        ]
+      },
+      "jump": {
+        "id": 50,
+        "view": "fn-pipeline"
+      }
+    },
+    {
+      "id": 39,
+      "type": "normal",
+      "name": "崩溃：转成失败结果",
+      "description": "未捕获的异常不能让 worker 退出；这里把异常类型和消息包成失败结果。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          "72-74"
+        ]
+      }
+    },
+    {
+      "id": 40,
+      "type": "normal",
+      "name": "停止并等待续租线程",
+      "description": "先通知 LeaseKeeper 停止，再等它最多 1 秒，确保不会留下后台线程。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          76,
+          77
+        ]
+      }
+    },
+    {
+      "id": 41,
+      "type": "normal",
+      "name": "收尾：写回结果",
+      "description": "把成功或失败写回存储，并发布对应事件；细节见 fn-worker-finish。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          78
+        ]
+      },
+      "jump": {
+        "id": 21,
+        "view": "fn-worker-finish"
+      },
+      "next": 42
+    },
+    {
+      "id": 42,
+      "type": "normal",
+      "name": "本轮结束",
+      "description": "返回真，表示这一轮领到了任务；worker 外层循环会立刻再试一次。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          61
+        ]
+      },
+      "next": null
+    }
+  ]
+}

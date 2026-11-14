@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codifold"
+version = "1.0.0"
+description = "把项目转换成可读的中文流程与静态契约（本地优先，只读写 JSON）"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "likefeng" }]
+keywords = ["code-reading", "flowchart", "documentation", "chinese"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Natural Language :: Chinese (Simplified)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Documentation",
+]
+# 后端只依赖标准库；前端构建产物已随仓库提供，运行无需 Node
+
+[project.scripts]
+codifold = "codifold.workbench:main"
+
+[tool.setuptools]
+packages = ["codifold"]

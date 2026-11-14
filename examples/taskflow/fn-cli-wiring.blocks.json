@@ -1,0 +1,500 @@
+{
+  "view": {
+    "id": "fn-cli-wiring",
+    "name": "命令行装配：参数表、配置覆盖、运行时组装",
+    "description": "这一章包含三个相邻的函数：build_parser 定义命令行长什么样，_apply_overrides 把用户输入合并进配置，_build_runtime 把存储、插件、worker、调度器和 HTTP 组装成一个运行时。读的时候可以把它们当成三节。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        31
+      ]
+    },
+    {
+      "id": "c17-0",
+      "kind": "branch",
+      "parent": 17,
+      "blocks": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        26
+      ],
+      "role": "body"
+    },
+    {
+      "id": "c23-0",
+      "kind": "branch",
+      "parent": 23,
+      "blocks": [
+        24
+      ],
+      "condition": "serve 模式，需要调度器"
+    },
+    {
+      "id": "c23-1",
+      "kind": "branch",
+      "parent": 23,
+      "blocks": [
+        25
+      ],
+      "condition": "不需要调度器"
+    },
+    {
+      "id": "c26-0",
+      "kind": "branch",
+      "parent": 26,
+      "blocks": [
+        27
+      ],
+      "condition": "serve 模式，需要 HTTP"
+    },
+    {
+      "id": "c26-1",
+      "kind": "branch",
+      "parent": 26,
+      "blocks": [
+        28
+      ],
+      "condition": "不需要 HTTP"
+    },
+    {
+      "id": "c17-1",
+      "kind": "branch",
+      "parent": 17,
+      "blocks": [
+        29,
+        30
+      ],
+      "condition": "组装过程中抛异常",
+      "role": "except"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 1,
+      "type": "normal",
+      "name": "第一节：定义命令行",
+      "description": "build_parser 负责创建解析器；它决定了用户能写哪些参数、每个子命令接受什么。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "200-203"
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "type": "normal",
+      "name": "注册全局参数",
+      "description": "先是所有子命令共用的 --config 和 --log-level，再声明必须选择一个子命令。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "204-206"
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "type": "normal",
+      "name": "serve 子命令的参数",
+      "description": "serve 接受监听地址、端口、worker 数、令牌和数据库路径。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "208-213"
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "type": "normal",
+      "name": "worker 子命令的参数",
+      "description": "worker 只接受 worker 数和数据库路径，因为它不启动 HTTP。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "215-217"
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "type": "normal",
+      "name": "enqueue 子命令的参数",
+      "description": "enqueue 需要任务类型、任务内容、最大尝试次数和数据库路径。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "219-223"
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "type": "normal",
+      "name": "status 子命令的参数",
+      "description": "status 可以按任务 id、状态和条数查询，也可以用 --db 指定数据库。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "225-229"
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "type": "normal",
+      "name": "run-once 子命令的参数",
+      "description": "run-once 只需要数据库路径，其余都沿用配置。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "231-232"
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "type": "normal",
+      "name": "解析器完成",
+      "description": "到这里参数表定义完毕，build_parser 返回解析器。下一节换一个函数，看命令行覆盖如何合并进配置。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          233
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 9,
+      "type": "normal",
+      "name": "第二节：合并命令行覆盖",
+      "description": "_apply_overrides 只处理用户显式写出的参数；没写的字段保持原配置不变。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          236,
+          237
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "type": "normal",
+      "name": "覆盖监听地址、端口和 worker 数",
+      "description": "这三个字段只要命令行给了值，就覆盖配置文件和默认值。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "238-241"
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "type": "normal",
+      "name": "覆盖 API 令牌",
+      "description": "令牌允许显式写成空字符串，表示关闭鉴权；空字符串会被转成“没有令牌”。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "242-244"
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "type": "normal",
+      "name": "覆盖数据库路径",
+      "description": "路径先展开 ~，再转成路径对象，避免后续每次使用都重复处理。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "245-247"
+        ]
+      }
+    },
+    {
+      "id": 13,
+      "type": "normal",
+      "name": "覆盖日志级别",
+      "description": "日志级别的命令行优先级最高；它会影响后面日志初始化。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          248,
+          249
+        ]
+      }
+    },
+    {
+      "id": 14,
+      "type": "normal",
+      "name": "覆盖结果",
+      "description": "所有覆盖做完后生成一个新的配置对象，原对象不变。下一节换到运行时组装，看各组件如何创建。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          250
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 15,
+      "type": "normal",
+      "name": "第三节：组装运行时",
+      "description": "运行时组装只负责把各组件创建出来并装进运行时容器；是否启用 HTTP 和调度器由调用方决定。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "36-38"
+        ]
+      }
+    },
+    {
+      "id": 16,
+      "type": "normal",
+      "name": "先打开存储",
+      "description": "存储初始化会建表并准备连接；它是后面所有组件的共同依赖。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          39
+        ]
+      },
+      "jump": {
+        "id": 1,
+        "view": "fn-storage"
+      }
+    },
+    {
+      "id": 17,
+      "type": "branch",
+      "name": "在异常保护下组装",
+      "description": "从存储打开开始进入一段带收尾的流程：任何组件创建失败，都要先关闭存储再抛出。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          40
+        ]
+      },
+      "kind": "try",
+      "select": "single",
+      "branches": [
+        "c17-0",
+        "c17-1"
+      ]
+    },
+    {
+      "id": 18,
+      "type": "normal",
+      "name": "创建事件总线",
+      "description": "所有 worker 和插件共用同一个总线；任务事件通过它广播。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          41
+        ]
+      },
+      "jump": {
+        "id": 29,
+        "view": "fn-registry-load"
+      }
+    },
+    {
+      "id": 19,
+      "type": "normal",
+      "name": "加载插件并挂载订阅者",
+      "description": "导入内置插件包，让步骤和事件订阅者完成注册；细节见 fn-registry-load。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          42
+        ]
+      },
+      "jump": {
+        "id": 15,
+        "view": "fn-registry-load"
+      }
+    },
+    {
+      "id": 20,
+      "type": "normal",
+      "name": "构造流水线",
+      "description": "流水线持有已注册的步骤和存储，是 worker 执行任务的入口。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          43
+        ]
+      },
+      "jump": {
+        "id": 31,
+        "view": "mod-runtime"
+      }
+    },
+    {
+      "id": 21,
+      "type": "normal",
+      "name": "确定 worker 数量",
+      "description": "命令行没指定时用配置值；这个数字决定后面创建几个 worker 线程。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          44
+        ]
+      }
+    },
+    {
+      "id": 22,
+      "type": "normal",
+      "name": "创建 worker 列表",
+      "description": "每个 worker 共享存储、流水线、事件总线和停止事件，只是名字不同。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "45-49"
+        ]
+      }
+    },
+    {
+      "id": 23,
+      "type": "branch",
+      "name": "需要调度器吗？",
+      "description": "serve 模式需要调度器做周期维护；worker 和 run-once 模式不需要。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          50,
+          51
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c23-0",
+        "c23-1"
+      ]
+    },
+    {
+      "id": 24,
+      "type": "normal",
+      "name": "需要：创建调度器",
+      "description": "传入调度间隔和保留期；调度器线程稍后由入口启动。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "52-54"
+        ]
+      }
+    },
+    {
+      "id": 25,
+      "type": "normal",
+      "name": "不需要：保持为空",
+      "description": "调度器留空，后续关闭流程会跳过它。"
+    },
+    {
+      "id": 26,
+      "type": "branch",
+      "name": "需要 HTTP 服务吗？",
+      "description": "serve 模式需要 HTTP；其余模式只跑后台任务，不需要监听端口。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          55,
+          56
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c26-0",
+        "c26-1"
+      ]
+    },
+    {
+      "id": 27,
+      "type": "normal",
+      "name": "需要：创建 API 和服务器",
+      "description": "把配置、存储、流水线、事件总线和令牌交给 API，再包成 HTTP 服务器。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          57,
+          58
+        ]
+      }
+    },
+    {
+      "id": 28,
+      "type": "normal",
+      "name": "不需要：保持为空",
+      "description": "HTTP 服务留空，入口不会启动 HTTP 线程。"
+    },
+    {
+      "id": 29,
+      "type": "normal",
+      "name": "组装失败：关闭存储",
+      "description": "避免异常路径泄漏数据库连接。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          59,
+          60
+        ]
+      }
+    },
+    {
+      "id": 30,
+      "type": "normal",
+      "name": "把异常继续抛出",
+      "description": "这里不吞异常；由命令行主函数统一翻译成退出码。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          61
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 31,
+      "type": "normal",
+      "name": "运行时组装完成",
+      "description": "所有组件装进运行时容器返回；入口拿到它之后就可以启动线程了。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          62
+        ]
+      },
+      "next": null
+    }
+  ]
+}

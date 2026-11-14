@@ -1,0 +1,316 @@
+{
+  "view": {
+    "id": "fn-run-step",
+    "name": "单步执行：重试与退避",
+    "description": "这一章展开单个步骤的执行函数（_run_step）：它允许失败后重试，每次失败等待更久，直到成功、重试耗尽或返回类型不对。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        33,
+        34,
+        35,
+        36
+      ]
+    },
+    {
+      "id": "c36-0",
+      "kind": "branch",
+      "parent": 36,
+      "blocks": [
+        37,
+        47
+      ],
+      "condition": "还有尝试机会"
+    },
+    {
+      "id": "c37-0",
+      "kind": "branch",
+      "parent": 37,
+      "blocks": [
+        38,
+        39
+      ],
+      "role": "body"
+    },
+    {
+      "id": "c39-0",
+      "kind": "branch",
+      "parent": 39,
+      "blocks": [
+        40
+      ],
+      "condition": "返回值不是字典"
+    },
+    {
+      "id": "c39-1",
+      "kind": "branch",
+      "parent": 39,
+      "blocks": [
+        41
+      ],
+      "condition": "返回值是字典"
+    },
+    {
+      "id": "c37-1",
+      "kind": "branch",
+      "parent": 37,
+      "blocks": [
+        42,
+        43
+      ],
+      "condition": "处理器抛出异常",
+      "role": "except"
+    },
+    {
+      "id": "c43-0",
+      "kind": "branch",
+      "parent": 43,
+      "blocks": [
+        44,
+        45
+      ],
+      "condition": "还能重试"
+    },
+    {
+      "id": "c43-1",
+      "kind": "branch",
+      "parent": 43,
+      "blocks": [
+        46
+      ],
+      "condition": "不能重试"
+    },
+    {
+      "id": "c36-1",
+      "kind": "branch",
+      "parent": 36,
+      "blocks": [
+        48
+      ],
+      "condition": "没有尝试机会"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 33,
+      "type": "normal",
+      "name": "函数接手",
+      "description": "记录开始时间，准备执行一个步骤处理器；返回值最终会变成一个步骤结果。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          84,
+          85
+        ]
+      }
+    },
+    {
+      "id": 34,
+      "type": "normal",
+      "name": "计算最多尝试几次",
+      "description": "配置里的重试次数加 1 才是总尝试次数；例如重试 2 次，最多执行 3 次。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          86
+        ]
+      }
+    },
+    {
+      "id": 35,
+      "type": "normal",
+      "name": "先准备错误信息",
+      "description": "错误信息只在失败时使用；成功时它保持为空。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          87
+        ]
+      }
+    },
+    {
+      "id": 36,
+      "type": "branch",
+      "name": "还有尝试机会吗？",
+      "description": "循环从第 1 次开始，最多到允许的次数；每轮都重新调用处理器。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          88
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c36-0",
+        "c36-1"
+      ]
+    },
+    {
+      "id": 37,
+      "type": "branch",
+      "name": "执行处理器",
+      "description": "调用步骤函数；正常返回就检查结果，抛异常就进入重试判断。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          89
+        ]
+      },
+      "kind": "try",
+      "select": "single",
+      "branches": [
+        "c37-0",
+        "c37-1"
+      ]
+    },
+    {
+      "id": 38,
+      "type": "normal",
+      "name": "正常调用",
+      "description": "把上下文副本传给处理器，避免步骤之间互相修改状态。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          90
+        ]
+      }
+    },
+    {
+      "id": 39,
+      "type": "branch",
+      "name": "返回值是字典吗？",
+      "description": "每个步骤都必须返回键值对象，后续步骤才能合并输出。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          91
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c39-0",
+        "c39-1"
+      ]
+    },
+    {
+      "id": 40,
+      "type": "normal",
+      "name": "不是字典：类型错误",
+      "description": "返回了列表、字符串或空值，说明步骤实现有问题；这个错误不重试。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          92
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 41,
+      "type": "normal",
+      "name": "是字典：本步成功",
+      "description": "输出可以交给流水线，准备生成成功结果。"
+    },
+    {
+      "id": 42,
+      "type": "normal",
+      "name": "记录异常",
+      "description": "保存异常类型和消息，作为最后一次失败的原因。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          93,
+          94
+        ]
+      }
+    },
+    {
+      "id": 43,
+      "type": "branch",
+      "name": "还能再试一次吗？",
+      "description": "如果还没到尝试上限，就等待一段时间后重试；否则返回失败。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          95
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c43-0",
+        "c43-1"
+      ]
+    },
+    {
+      "id": 44,
+      "type": "normal",
+      "name": "等待一会儿再试",
+      "description": "等待时间按指数增长：第一次短，之后每次翻倍，避免连续冲击下游。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          96
+        ]
+      }
+    },
+    {
+      "id": 45,
+      "type": "normal",
+      "name": "回到循环头",
+      "description": "尝试次数加一，重新执行同一个处理器。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          97
+        ]
+      },
+      "next": 36
+    },
+    {
+      "id": 46,
+      "type": "normal",
+      "name": "重试耗尽：返回失败",
+      "description": "带上最后一次错误，整体标记为失败。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          98,
+          99
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 47,
+      "type": "normal",
+      "name": "这一步成功时：返回结果并结束",
+      "description": "如果这一步成功，带上耗时和输出返回；流水线会把它记入步骤列表。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          100,
+          101
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 48,
+      "type": "normal",
+      "name": "兜底失败",
+      "description": "理论上循环至少会执行一次；这个分支只防御异常状态，返回一个带未知错误的结果。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          102,
+          103
+        ]
+      },
+      "next": null
+    }
+  ]
+}

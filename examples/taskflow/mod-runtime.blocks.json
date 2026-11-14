@@ -1,0 +1,191 @@
+{
+  "view": {
+    "id": "mod-runtime",
+    "name": "运行时类型：线程、结果与注册表",
+    "description": "这一章按模块顺序解释运行时用到的类型：先看工作线程模块里的三个线程类，再看流水线模块的计划表和两个结果类型，最后看事件总线和注册表的声明。",
+    "kind": "struct"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "id": 23,
+      "type": "normal",
+      "name": "工作线程模块声明",
+      "description": "文件开头说明模块职责，导入事件总线、流水线和存储类型。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          1,
+          2,
+          "4-5",
+          "7-9",
+          11
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 24,
+      "type": "normal",
+      "name": "续租线程类型",
+      "description": "持有存储、任务 id、worker 名和租约时长；任务执行期间定期续租。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          "14-15",
+          "17-24"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 25,
+      "type": "normal",
+      "name": "续租线程的停止方法",
+      "description": "置位内部停止事件，让续租循环退出。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          "33-34"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 26,
+      "type": "normal",
+      "name": "worker 线程类型",
+      "description": "持有存储、流水线、事件总线、共享停止事件，以及轮询和租约参数。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          "37-47"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 27,
+      "type": "normal",
+      "name": "调度器线程类型",
+      "description": "持有存储、事件总线、停止事件、调度间隔和保留期；每隔一段时间执行维护。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          "104-113"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 28,
+      "type": "normal",
+      "name": "流水线模块声明与计划表",
+      "description": "定义任务类型到步骤序列的计划表，以及未知类型异常。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          1,
+          2,
+          "4-6",
+          "8-9",
+          "12-15",
+          "18-19"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 29,
+      "type": "normal",
+      "name": "步骤结果类型",
+      "description": "记录步骤名、尝试次数、成败、耗时、输出和错误；流水线用列表保存它。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          "22-29"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 30,
+      "type": "normal",
+      "name": "流水线结果类型",
+      "description": "汇总整体成败、合并输出、步骤结果和错误；worker 用它决定写成功还是失败。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          "32-37"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 31,
+      "type": "normal",
+      "name": "流水线初始化",
+      "description": "复制步骤表、保存可选存储，并复制计划表，避免运行时修改全局配置。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          "40-44"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 32,
+      "type": "normal",
+      "name": "事件总线模块声明",
+      "description": "定义事件处理函数的签名，并导入事件总线需要的类型。",
+      "code_mapping": {
+        "file": "taskflow/events.py",
+        "lines": [
+          1,
+          2,
+          "4-8",
+          11
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 33,
+      "type": "normal",
+      "name": "注册表模块声明与全局表",
+      "description": "定义步骤和订阅者的回调类型、步骤说明，以及步骤表、订阅者表和已加载包集合；装饰器就是往这些表里写。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          1,
+          2,
+          "4-8",
+          10,
+          "13-14",
+          "17-23",
+          "26-28"
+        ]
+      },
+      "next": null
+    }
+  ]
+}

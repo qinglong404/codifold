@@ -1,0 +1,12 @@
+{
+  "database": "taskflow.db",
+  "host": "127.0.0.1",
+  "port": 8765,
+  "workers": 2,
+  "lease_seconds": 30,
+  "poll_seconds": 0.5,
+  "scheduler_seconds": 5,
+  "retention_seconds": 3600,
+  "api_token": "",
+  "plugin_package": "taskflow.plugins"
+}

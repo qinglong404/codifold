@@ -1,0 +1,50 @@
+{
+  "view": {
+    "id": "mod-cli",
+    "name": "命令行模块的定义",
+    "description": "这一章只有两个定义：命令行模块的声明，以及贯穿运行时的运行时容器。",
+    "kind": "struct"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        5,
+        6
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "id": 5,
+      "type": "normal",
+      "name": "模块声明",
+      "description": "文件开头说明命令行层的职责，并导入配置、存储、流水线、worker 和 HTTP 相关模块。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          1,
+          2,
+          "4-12",
+          "14-20",
+          22
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 6,
+      "type": "normal",
+      "name": "运行时容器：组件的集合",
+      "description": "把配置、存储、事件总线、流水线、worker 列表、调度器和 HTTP 服务装在一起；入口和关闭流程都通过它访问组件。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "25-33"
+        ]
+      },
+      "next": null
+    }
+  ]
+}

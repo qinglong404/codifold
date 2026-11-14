@@ -1,0 +1,147 @@
+{
+  "view": {
+    "id": "entry-leasekeeper-thread",
+    "name": "LeaseKeeper 线程：替任务续租",
+    "description": "这一章看一个短生命周期线程：任务执行期间，它按租约时长的三分之一持续续租，避免任务被调度器误判为过期；任务结束或续租失败时，它自己退出。",
+    "kind": "entry"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        15,
+        16,
+        17
+      ]
+    },
+    {
+      "id": "c17-0",
+      "kind": "branch",
+      "parent": 17,
+      "blocks": [
+        18
+      ],
+      "condition": "已经收到停止请求"
+    },
+    {
+      "id": "c17-1",
+      "kind": "branch",
+      "parent": 17,
+      "blocks": [
+        19
+      ],
+      "condition": "还没收到停止请求"
+    },
+    {
+      "id": "c19-0",
+      "kind": "branch",
+      "parent": 19,
+      "blocks": [
+        20
+      ],
+      "condition": "续租失败"
+    },
+    {
+      "id": "c19-1",
+      "kind": "branch",
+      "parent": 19,
+      "blocks": [
+        21
+      ],
+      "condition": "续租成功"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 15,
+      "type": "normal",
+      "name": "线程开始运行",
+      "description": "LeaseKeeper 是任务执行期间的守护线程，启动后进入运行入口。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          26
+        ]
+      }
+    },
+    {
+      "id": 16,
+      "type": "normal",
+      "name": "计算心跳间隔",
+      "description": "间隔取租约时长的三分之一，但至少 0.2 秒；这样在租约到期前至少能续租两次。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          27
+        ]
+      }
+    },
+    {
+      "id": 17,
+      "type": "branch",
+      "name": "收到停止请求了吗？",
+      "description": "每轮先检查内部停止开关；收到停止就不再续租。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          28
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c17-0",
+        "c17-1"
+      ]
+    },
+    {
+      "id": 18,
+      "type": "normal",
+      "name": "停止：结束线程",
+      "description": "任务已经处理完，线程直接退出。",
+      "next": null
+    },
+    {
+      "id": 19,
+      "type": "branch",
+      "name": "续租成功了吗？",
+      "description": "调用存储的心跳方法，把当前任务和 worker 的租约往后延；只有任务仍由当前 worker 持有时才会成功。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          29,
+          30
+        ]
+      },
+      "jump": {
+        "id": 32,
+        "view": "fn-storage-claim"
+      },
+      "select": "single",
+      "branches": [
+        "c19-0",
+        "c19-1"
+      ]
+    },
+    {
+      "id": 20,
+      "type": "normal",
+      "name": "失败：结束线程",
+      "description": "说明任务已被接管或取消，继续续租没有意义，线程退出。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          31
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 21,
+      "type": "normal",
+      "name": "成功：等待下一次心跳",
+      "description": "回到循环头，继续等待下一个间隔。",
+      "next": 17
+    }
+  ]
+}

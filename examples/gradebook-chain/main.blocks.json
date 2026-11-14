@@ -1,0 +1,317 @@
+{
+  "view": {
+    "id": "main",
+    "name": "主流程",
+    "description": "脚本启动 → 菜单循环 → 六种功能 → 保存退出。"
+  },
+  "blocks": [
+    {
+      "id": 1,
+      "type": "normal",
+      "name": "脚本运行入口",
+      "description": "直接运行时调用 main。",
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          "109-110"
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "type": "normal",
+      "name": "主函数入口",
+      "description": "进入菜单循环。",
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          "81-82"
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "type": "normal",
+      "name": "读取学生数据",
+      "description": "启动时从磁盘加载；详见 fn-load。",
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          83
+        ]
+      },
+      "jump": {
+        "view": "fn-load",
+        "id": 1
+      }
+    },
+    {
+      "id": 4,
+      "type": "normal",
+      "name": "循环与菜单",
+      "description": "每轮检查循环并打印菜单。",
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          "84-85"
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "type": "normal",
+      "name": "读取选择",
+      "description": "读取并清理输入。",
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          86
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "type": "branch",
+      "select": "single",
+      "name": "按选择分发",
+      "description": "六种功能、退出和无效输入。",
+      "branches": [
+        {
+          "condition": "输入 1",
+          "steps": [
+            {
+              "id": 7,
+              "type": "normal",
+              "name": "输入姓名",
+              "description": "读取姓名。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  88
+                ]
+              }
+            },
+            {
+              "id": 8,
+              "type": "normal",
+              "name": "输入成绩",
+              "description": "解析成绩。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  89
+                ]
+              }
+            },
+            {
+              "id": 9,
+              "type": "normal",
+              "name": "新增并提示",
+              "description": "已存在则提示，否则写入；详见 fn-add。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  90
+                ]
+              },
+              "jump": {
+                "view": "fn-add",
+                "id": 1
+              },
+              "next": 4
+            }
+          ]
+        },
+        {
+          "condition": "输入 2",
+          "steps": [
+            {
+              "id": 10,
+              "type": "normal",
+              "name": "列出学生",
+              "description": "详见 fn-list。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  92
+                ]
+              },
+              "jump": {
+                "view": "fn-list",
+                "id": 1
+              },
+              "next": 4
+            }
+          ]
+        },
+        {
+          "condition": "输入 3",
+          "steps": [
+            {
+              "id": 11,
+              "type": "normal",
+              "name": "输入姓名",
+              "description": "读取要修改的学生姓名。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  94
+                ]
+              }
+            },
+            {
+              "id": 12,
+              "type": "normal",
+              "name": "输入新成绩",
+              "description": "解析新成绩。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  95
+                ]
+              }
+            },
+            {
+              "id": 13,
+              "type": "normal",
+              "name": "修改并提示",
+              "description": "未找到则提示；详见 fn-update。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  96
+                ]
+              },
+              "jump": {
+                "view": "fn-update",
+                "id": 1
+              },
+              "next": 4
+            }
+          ]
+        },
+        {
+          "condition": "输入 4",
+          "steps": [
+            {
+              "id": 14,
+              "type": "normal",
+              "name": "输入姓名",
+              "description": "读取要删除的学生姓名。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  98
+                ]
+              }
+            },
+            {
+              "id": 15,
+              "type": "normal",
+              "name": "删除并提示",
+              "description": "未找到则提示；详见 fn-delete。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  99
+                ]
+              },
+              "jump": {
+                "view": "fn-delete",
+                "id": 1
+              },
+              "next": 4
+            }
+          ]
+        },
+        {
+          "condition": "输入 5",
+          "steps": [
+            {
+              "id": 16,
+              "type": "normal",
+              "name": "统计",
+              "description": "打印人数与平均分；详见 fn-summary。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  101
+                ]
+              },
+              "jump": {
+                "view": "fn-summary",
+                "id": 1
+              },
+              "next": 4
+            }
+          ]
+        },
+        {
+          "condition": "输入 0",
+          "steps": [
+            {
+              "id": 17,
+              "type": "normal",
+              "name": "跳出循环",
+              "description": "结束菜单循环。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  103
+                ]
+              },
+              "next": 19
+            }
+          ]
+        },
+        {
+          "condition": "其他输入",
+          "steps": [
+            {
+              "id": 18,
+              "type": "normal",
+              "name": "提示无效选择",
+              "description": "回到菜单。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  105
+                ]
+              },
+              "next": 4
+            }
+          ]
+        }
+      ],
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          87,
+          91,
+          93,
+          97,
+          100,
+          102,
+          104
+        ]
+      }
+    },
+    {
+      "id": 19,
+      "type": "normal",
+      "name": "保存并退出",
+      "description": "循环结束后写回磁盘；详见 fn-save。",
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          106
+        ]
+      },
+      "jump": {
+        "view": "fn-save",
+        "id": 1
+      },
+      "next": null
+    }
+  ]
+}

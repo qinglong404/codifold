@@ -1,0 +1,214 @@
+{
+  "view": {
+    "id": "fn-prune-step",
+    "name": "maintenance.prune：清理历史任务",
+    "description": "这一章展开维护步骤：它从上下文里拿到存储和保留期，校验参数后调用清理，最后返回删除数量。开头是模块声明。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        23,
+        24,
+        25,
+        26,
+        29,
+        30,
+        33
+      ]
+    },
+    {
+      "id": "c26-0",
+      "kind": "branch",
+      "parent": 26,
+      "blocks": [
+        27
+      ],
+      "condition": "没有存储"
+    },
+    {
+      "id": "c26-1",
+      "kind": "branch",
+      "parent": 26,
+      "blocks": [
+        28
+      ],
+      "condition": "有存储"
+    },
+    {
+      "id": "c30-0",
+      "kind": "branch",
+      "parent": 30,
+      "blocks": [
+        31
+      ],
+      "condition": "保留期是负数"
+    },
+    {
+      "id": "c30-1",
+      "kind": "branch",
+      "parent": 30,
+      "blocks": [
+        32
+      ],
+      "condition": "保留期非负"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 23,
+      "type": "normal",
+      "name": "开头：插件模块声明",
+      "description": "模块只导入步骤装饰器和类型提示，没有额外依赖。",
+      "code_mapping": {
+        "file": "taskflow/plugins/maintenance.py",
+        "lines": [
+          1,
+          2,
+          4,
+          6
+        ]
+      }
+    },
+    {
+      "id": 24,
+      "type": "normal",
+      "name": "步骤入口",
+      "description": "这个函数被注册为 maintenance.prune，不重试；清理失败就让它失败。",
+      "code_mapping": {
+        "file": "taskflow/plugins/maintenance.py",
+        "lines": [
+          9,
+          10
+        ]
+      }
+    },
+    {
+      "id": 25,
+      "type": "normal",
+      "name": "先拿存储",
+      "description": "维护步骤必须能访问存储，否则无法删除数据。",
+      "code_mapping": {
+        "file": "taskflow/plugins/maintenance.py",
+        "lines": [
+          11
+        ]
+      }
+    },
+    {
+      "id": 26,
+      "type": "branch",
+      "name": "存储存在吗？",
+      "description": "手动构造的上下文可能没有存储，需要明确拒绝。",
+      "code_mapping": {
+        "file": "taskflow/plugins/maintenance.py",
+        "lines": [
+          12
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c26-0",
+        "c26-1"
+      ]
+    },
+    {
+      "id": 27,
+      "type": "normal",
+      "name": "不存在：运行时错误",
+      "description": "提示维护步骤需要存储，避免静默什么都不做。",
+      "code_mapping": {
+        "file": "taskflow/plugins/maintenance.py",
+        "lines": [
+          13
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 28,
+      "type": "normal",
+      "name": "读取保留期",
+      "description": "保留期来自任务内容，默认 3600 秒；它决定多久以前的数据可以删。",
+      "code_mapping": {
+        "file": "taskflow/plugins/maintenance.py",
+        "lines": [
+          14
+        ]
+      }
+    },
+    {
+      "id": 29,
+      "type": "normal",
+      "name": "把保留期转成数字",
+      "description": "任务内容里的值可能是字符串；统一转成浮点数后再比较。",
+      "code_mapping": {
+        "file": "taskflow/plugins/maintenance.py",
+        "lines": [
+          15
+        ]
+      }
+    },
+    {
+      "id": 30,
+      "type": "branch",
+      "name": "保留期是非负数吗？",
+      "description": "负数会让截止时间跑到未来，删除范围失去意义。",
+      "code_mapping": {
+        "file": "taskflow/plugins/maintenance.py",
+        "lines": [
+          16
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c30-0",
+        "c30-1"
+      ]
+    },
+    {
+      "id": 31,
+      "type": "normal",
+      "name": "负数：参数错误",
+      "description": "提示保留期不能为负。",
+      "code_mapping": {
+        "file": "taskflow/plugins/maintenance.py",
+        "lines": [
+          17
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 32,
+      "type": "normal",
+      "name": "非负：执行清理",
+      "description": "调用存储的清理方法，删除超过保留期的已完成任务；细节见 fn-scheduler-tick。",
+      "code_mapping": {
+        "file": "taskflow/plugins/maintenance.py",
+        "lines": [
+          18
+        ]
+      },
+      "jump": {
+        "id": 41,
+        "view": "fn-scheduler-tick"
+      }
+    },
+    {
+      "id": 33,
+      "type": "normal",
+      "name": "返回清理结果",
+      "description": "带上删除数量和实际使用的保留期，调用方可以据此记录日志。",
+      "code_mapping": {
+        "file": "taskflow/plugins/maintenance.py",
+        "lines": [
+          19
+        ]
+      },
+      "next": null
+    }
+  ]
+}

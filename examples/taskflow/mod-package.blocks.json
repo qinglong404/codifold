@@ -1,0 +1,62 @@
+{
+  "view": {
+    "id": "mod-package",
+    "name": "包与脚本声明",
+    "description": "这一章是三个不参与执行链的声明：脚本入口、包版本和插件包说明；读主线时可以先跳过。",
+    "kind": "struct"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        7,
+        8,
+        9
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "id": 7,
+      "type": "normal",
+      "name": "脚本的模块声明",
+      "description": "脚本开头说明用途，并从命令行模块导入主函数。",
+      "code_mapping": {
+        "file": "run.py",
+        "lines": [
+          2,
+          3
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 8,
+      "type": "normal",
+      "name": "包的声明",
+      "description": "包的文档字符串和版本号；版本号用于识别安装的是哪一版。",
+      "code_mapping": {
+        "file": "taskflow/__init__.py",
+        "lines": [
+          1,
+          2
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 9,
+      "type": "normal",
+      "name": "插件包声明",
+      "description": "内置插件包的说明；实际的插件模块会被加载函数扫描并导入。",
+      "code_mapping": {
+        "file": "taskflow/plugins/__init__.py",
+        "lines": [
+          1
+        ]
+      },
+      "next": null
+    }
+  ]
+}

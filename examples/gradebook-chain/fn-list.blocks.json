@@ -1,0 +1,72 @@
+{
+  "view": {
+    "id": "fn-list",
+    "name": "列出学生",
+    "description": "list_students：空列表提示，否则逐条打印。"
+  },
+  "blocks": [
+    {
+      "id": 1,
+      "type": "normal",
+      "name": "函数入口",
+      "description": "入参：学生列表；无返回值，直接打印。",
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          "64-65"
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "type": "branch",
+      "select": "single",
+      "name": "列表是否为空",
+      "description": "空列表和正常列表两条路径。",
+      "branches": [
+        {
+          "condition": "为空",
+          "steps": [
+            {
+              "id": 3,
+              "type": "normal",
+              "name": "提示并返回",
+              "description": "打印“暂无学生记录”。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  "67-68"
+                ]
+              },
+              "next": null
+            }
+          ]
+        },
+        {
+          "condition": "非空",
+          "steps": [
+            {
+              "id": 4,
+              "type": "normal",
+              "name": "逐条打印",
+              "description": "按“姓名: 成绩”输出。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  "69-70"
+                ]
+              },
+              "next": null
+            }
+          ]
+        }
+      ],
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          66
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "view": {
+    "id": "fn-save",
+    "name": "保存学生数据",
+    "description": "save_students：把列表写回磁盘。"
+  },
+  "blocks": [
+    {
+      "id": 1,
+      "type": "normal",
+      "name": "函数入口",
+      "description": "入参：学生列表；无返回值。",
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          "19-20"
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "type": "normal",
+      "name": "写回磁盘",
+      "description": "使用 DATA_FILE 写入 JSON；定义见 struct 的“数据文件路径”。",
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          "21-24"
+        ]
+      },
+      "jump": {
+        "view": "struct",
+        "id": 2
+      },
+      "next": null
+    }
+  ]
+}

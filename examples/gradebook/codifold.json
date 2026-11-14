@@ -1,0 +1,12 @@
+{
+  "project": {
+    "name": "学生成绩管理",
+    "description": "终端版学生成绩管理示例：加载、菜单、增删改查、统计与保存。",
+    "root": "."
+  },
+  "files": ["gradebook.py"],
+  "views": {
+    "suffix": ".blocks.json",
+    "entry": "gradebook"
+  }
+}

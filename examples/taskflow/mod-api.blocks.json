@@ -1,0 +1,142 @@
+{
+  "view": {
+    "id": "mod-api",
+    "name": "HTTP 模块的定义：类型、路由表、服务器",
+    "description": "这一章是 HTTP 模块的名词解释：请求和路由用什么类型表示，路由表如何登记，服务器和处理类长什么样。读接口逻辑之前，先在这里认一下这些名字。",
+    "kind": "struct"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "id": 17,
+      "type": "normal",
+      "name": "模块声明与常量",
+      "description": "文件开头说明模块职责，导入标准库，并定义请求体上限 64 KiB。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          1,
+          2,
+          "4-12",
+          "14-17",
+          "19-20"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 18,
+      "type": "normal",
+      "name": "请求对象：一次请求的全部信息",
+      "description": "把方法、路径、查询参数、请求头和原始请求体装在一起，业务函数只依赖这个对象。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "23-29"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 19,
+      "type": "normal",
+      "name": "路由与路由表",
+      "description": "每条路由记录方法、路径正则、处理函数名和是否需要鉴权；路由表是全局的路由清单。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "47-52",
+          55
+        ]
+      },
+      "jump": {
+        "view": "contract-api",
+        "id": 1
+      },
+      "next": null
+    },
+    {
+      "id": 20,
+      "type": "normal",
+      "name": "路由注册装饰器",
+      "description": "把路径里的占位符编译成正则，再把路由追加到路由表；接口函数靠它完成登记。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "58-60",
+          "62-64",
+          66
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 21,
+      "type": "normal",
+      "name": "任务序列化助手",
+      "description": "直接把任务对象转成字典，避免每个接口重复写序列化逻辑。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "69-70"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 22,
+      "type": "normal",
+      "name": "HTTP 服务器类型",
+      "description": "线程化服务器，持有一个 API 实例；每个请求交给它分发。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "191-193",
+          "195-197"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 23,
+      "type": "normal",
+      "name": "请求处理类",
+      "description": "声明服务器标识和 HTTP/1.1 协议版本；具体读写请求由基类完成。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "200-202"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 24,
+      "type": "normal",
+      "name": "API 初始化",
+      "description": "保存配置、存储、流水线、事件总线和可选令牌；这些是分发和业务函数需要的全部依赖。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "73-81"
+        ]
+      },
+      "next": null
+    }
+  ]
+}

@@ -1,0 +1,159 @@
+{
+  "view": {
+    "id": "entry-run-once",
+    "name": "run-once：执行一条就退出",
+    "description": "这一章看一次性执行模式：它复用同一套运行时，但只创建一个 worker，不启动 HTTP 和调度器，领一条任务执行完就关闭。",
+    "kind": "entry"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        17,
+        18,
+        19,
+        20,
+        24
+      ]
+    },
+    {
+      "id": "c20-0",
+      "kind": "branch",
+      "parent": 20,
+      "blocks": [
+        21,
+        22
+      ],
+      "role": "body"
+    },
+    {
+      "id": "f20",
+      "kind": "finally",
+      "parent": 20,
+      "blocks": [
+        23
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "id": 17,
+      "type": "normal",
+      "name": "run-once 入口",
+      "description": "用户执行 taskflow run-once 时进入这里，拿到配置和命令行参数。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          178
+        ]
+      }
+    },
+    {
+      "id": 18,
+      "type": "normal",
+      "name": "创建停止事件",
+      "description": "即使只执行一次，也复用同一套停止机制；后续关闭流程会用到它。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          179
+        ]
+      }
+    },
+    {
+      "id": 19,
+      "type": "normal",
+      "name": "组装单 worker 运行时",
+      "description": "只创建一个 worker，不启动 HTTP 和调度器；这样启动和退出都最快。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          180,
+          181
+        ]
+      },
+      "jump": {
+        "id": 15,
+        "view": "fn-cli-wiring"
+      }
+    },
+    {
+      "id": 20,
+      "type": "branch",
+      "name": "执行一条任务并关闭",
+      "description": "进入一段带收尾的流程：先领取并处理一条任务，无论结果如何，最后都关闭运行时。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          182,
+          186
+        ]
+      },
+      "kind": "try",
+      "select": "single",
+      "branches": [
+        "c20-0"
+      ],
+      "finally": "f20"
+    },
+    {
+      "id": 21,
+      "type": "normal",
+      "name": "领取并执行一条任务",
+      "description": "调用 worker 的单次处理；返回是否真的领到了任务。细节见 fn-worker-process。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          183
+        ]
+      },
+      "jump": {
+        "id": 29,
+        "view": "fn-worker-process"
+      }
+    },
+    {
+      "id": 22,
+      "type": "normal",
+      "name": "打印处理结果与统计",
+      "description": "输出这次有没有处理任务，以及最新的状态计数。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          184,
+          185
+        ]
+      }
+    },
+    {
+      "id": 23,
+      "type": "normal",
+      "name": "执行关闭",
+      "description": "关闭 worker 和存储，释放数据库连接。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          187
+        ]
+      },
+      "jump": {
+        "id": 42,
+        "view": "fn-runtime-control"
+      }
+    },
+    {
+      "id": 24,
+      "type": "normal",
+      "name": "正常退出",
+      "description": "处理完成并关闭后，run-once 返回 0。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          188
+        ]
+      },
+      "next": null
+    }
+  ]
+}

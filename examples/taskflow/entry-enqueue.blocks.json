@@ -1,0 +1,332 @@
+{
+  "view": {
+    "id": "entry-enqueue",
+    "name": "enqueue：写入一条任务",
+    "description": "这一章看一条任务如何从命令行进入数据库：先准备存储和插件，再校验任务类型与内容，最后写入排队状态并发布创建事件。",
+    "kind": "entry"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        37,
+        38,
+        39,
+        54
+      ]
+    },
+    {
+      "id": "c39-0",
+      "kind": "branch",
+      "parent": 39,
+      "blocks": [
+        40,
+        41,
+        42,
+        43,
+        44,
+        47,
+        50,
+        51,
+        52
+      ],
+      "role": "body"
+    },
+    {
+      "id": "c44-0",
+      "kind": "branch",
+      "parent": 44,
+      "blocks": [
+        45
+      ],
+      "role": "body"
+    },
+    {
+      "id": "c44-1",
+      "kind": "branch",
+      "parent": 44,
+      "blocks": [
+        46
+      ],
+      "condition": "JSON 解析失败",
+      "role": "except"
+    },
+    {
+      "id": "c47-0",
+      "kind": "branch",
+      "parent": 47,
+      "blocks": [
+        48
+      ],
+      "condition": "内容不是对象"
+    },
+    {
+      "id": "c47-1",
+      "kind": "branch",
+      "parent": 47,
+      "blocks": [
+        49
+      ],
+      "condition": "内容是对象"
+    },
+    {
+      "id": "f39",
+      "kind": "finally",
+      "parent": 39,
+      "blocks": [
+        53
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "id": 37,
+      "type": "normal",
+      "name": "enqueue 入口",
+      "description": "用户执行 taskflow enqueue 时进入这里，拿到任务类型、任务内容和最大尝试次数。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          136
+        ]
+      }
+    },
+    {
+      "id": 38,
+      "type": "normal",
+      "name": "先打开存储",
+      "description": "存储初始化会建表并准备当前线程的数据库连接；后面无论成败都要关闭它。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          137
+        ]
+      }
+    },
+    {
+      "id": 39,
+      "type": "branch",
+      "name": "在存储生命周期内创建任务",
+      "description": "从这里进入一段带收尾的流程：中间任何一步失败，最后都会关闭存储，避免连接泄漏。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          138,
+          152
+        ]
+      },
+      "kind": "try",
+      "select": "single",
+      "branches": [
+        "c39-0"
+      ],
+      "finally": "f39"
+    },
+    {
+      "id": 40,
+      "type": "normal",
+      "name": "准备事件总线",
+      "description": "创建进程内事件总线，用来在任务创建后通知订阅者。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          139
+        ]
+      }
+    },
+    {
+      "id": 41,
+      "type": "normal",
+      "name": "加载插件并注册步骤",
+      "description": "导入内置插件包，让 csv.import、report.summarize 等步骤和订阅者完成注册；细节见 fn-registry-load。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          140
+        ]
+      },
+      "jump": {
+        "id": 15,
+        "view": "fn-registry-load"
+      }
+    },
+    {
+      "id": 42,
+      "type": "normal",
+      "name": "组装流水线",
+      "description": "用已注册的步骤和存储构造流水线；这一步只准备执行能力，不真正执行任务。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          141
+        ]
+      },
+      "jump": {
+        "id": 27,
+        "view": "fn-registry-load"
+      }
+    },
+    {
+      "id": 43,
+      "type": "normal",
+      "name": "先确认任务类型有计划",
+      "description": "未知类型即使写进数据库也跑不起来，所以要在写库前查计划表；细节见 fn-pipeline。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          142
+        ]
+      },
+      "jump": {
+        "id": 72,
+        "view": "fn-pipeline"
+      }
+    },
+    {
+      "id": 44,
+      "type": "branch",
+      "name": "解析任务内容",
+      "description": "命令行传进来的是 JSON 文本，先把它解析成对象；解析失败会直接拒绝。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          143
+        ]
+      },
+      "kind": "try",
+      "select": "single",
+      "branches": [
+        "c44-0",
+        "c44-1"
+      ]
+    },
+    {
+      "id": 45,
+      "type": "normal",
+      "name": "把 JSON 文本转成对象",
+      "description": "调用 JSON 解析器；成功后才能继续检查它是不是对象。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          144
+        ]
+      }
+    },
+    {
+      "id": 46,
+      "type": "normal",
+      "name": "解析失败：提示不是合法 JSON",
+      "description": "把底层解析错误包装成用户能看懂的提示；解析失败后，后面的校验和写库都不再执行。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          145,
+          146
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 47,
+      "type": "branch",
+      "name": "任务内容必须是对象吗？",
+      "description": "即使 JSON 合法，数组、字符串或空值也不能作为任务内容；这里只接受键值对象。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          147
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c47-0",
+        "c47-1"
+      ]
+    },
+    {
+      "id": 48,
+      "type": "normal",
+      "name": "不是对象：拒绝",
+      "description": "提示任务内容必须是 JSON 对象，后面的写库不再执行。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          148
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 49,
+      "type": "normal",
+      "name": "是对象：进入写库",
+      "description": "校验全部通过，开始真正创建任务。"
+    },
+    {
+      "id": 50,
+      "type": "normal",
+      "name": "写入排队任务",
+      "description": "把任务内容和最大尝试次数写入数据库，再读回完整记录；存储细节见 fn-storage。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          149
+        ]
+      },
+      "jump": {
+        "id": 5,
+        "view": "fn-storage"
+      }
+    },
+    {
+      "id": 51,
+      "type": "normal",
+      "name": "发布 job.created",
+      "description": "通知事件总线：新任务已经创建。订阅者可以据此做日志、通知或后续处理。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          150
+        ]
+      }
+    },
+    {
+      "id": 52,
+      "type": "normal",
+      "name": "打印新任务",
+      "description": "把刚创建的任务以缩进 JSON 输出，调用方可以直接看到任务 id。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          151
+        ]
+      }
+    },
+    {
+      "id": 53,
+      "type": "normal",
+      "name": "关闭存储",
+      "description": "无论创建成功还是中途失败，都关闭当前线程的数据库连接。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          153
+        ]
+      }
+    },
+    {
+      "id": 54,
+      "type": "normal",
+      "name": "成功退出",
+      "description": "任务写入并打印完成，enqueue 返回 0。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          154
+        ]
+      },
+      "next": null
+    }
+  ]
+}

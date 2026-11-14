@@ -1,0 +1,284 @@
+{
+  "view": {
+    "id": "fn-registry-load",
+    "name": "插件加载与事件总线",
+    "description": "这一章看插件如何被发现和注册：加载函数扫描内置插件包，导入模块，让装饰器把步骤和订阅者写进全局表；末尾附上注册表快照和事件总线的实现。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        15,
+        16,
+        19,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ]
+    },
+    {
+      "id": "c16-0",
+      "kind": "branch",
+      "parent": 16,
+      "blocks": [
+        17
+      ],
+      "condition": "已经加载过"
+    },
+    {
+      "id": "c16-1",
+      "kind": "branch",
+      "parent": 16,
+      "blocks": [
+        18
+      ],
+      "condition": "还没有加载"
+    },
+    {
+      "id": "c19-0",
+      "kind": "branch",
+      "parent": 19,
+      "blocks": [
+        20
+      ],
+      "condition": "扫描到 csv_source"
+    },
+    {
+      "id": "c19-1",
+      "kind": "branch",
+      "parent": 19,
+      "blocks": [
+        21
+      ],
+      "condition": "扫描到 report"
+    },
+    {
+      "id": "c19-2",
+      "kind": "branch",
+      "parent": 19,
+      "blocks": [
+        22
+      ],
+      "condition": "扫描到 notify"
+    },
+    {
+      "id": "c19-3",
+      "kind": "branch",
+      "parent": 19,
+      "blocks": [
+        23
+      ],
+      "condition": "扫描到 maintenance"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 15,
+      "type": "normal",
+      "name": "加载函数接手",
+      "description": "同一个插件包只加载一次；重复调用直接返回已注册的步骤名。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          61,
+          62
+        ]
+      }
+    },
+    {
+      "id": 16,
+      "type": "branch",
+      "name": "这个包已经加载过吗？",
+      "description": "用一个全局集合记录已加载的包，避免重复导入导致重复注册。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          63
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c16-0",
+        "c16-1"
+      ]
+    },
+    {
+      "id": 17,
+      "type": "normal",
+      "name": "已加载：直接返回",
+      "description": "不再扫描模块，直接给出当前步骤名。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          64
+        ]
+      },
+      "jump": {
+        "id": 28
+      },
+      "next": null
+    },
+    {
+      "id": 18,
+      "type": "normal",
+      "name": "未加载：导入插件包",
+      "description": "导入包对象，拿到它的模块搜索路径。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          65
+        ]
+      }
+    },
+    {
+      "id": 19,
+      "type": "branch",
+      "name": "扫描包里的插件模块",
+      "description": "按包路径逐个导入四个内置模块；每个模块在导入时通过装饰器完成注册。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          66,
+          67
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c19-0",
+        "c19-1",
+        "c19-2",
+        "c19-3"
+      ]
+    },
+    {
+      "id": 20,
+      "type": "normal",
+      "name": "导入 csv_source",
+      "description": "注册 csv.import 步骤和失败事件订阅者；细节见 fn-import-csv。",
+      "jump": {
+        "id": 40,
+        "view": "fn-import-csv"
+      }
+    },
+    {
+      "id": 21,
+      "type": "normal",
+      "name": "导入 report",
+      "description": "注册 report.summarize 步骤和成功事件订阅者；细节见 fn-summarize。",
+      "jump": {
+        "id": 20,
+        "view": "fn-summarize"
+      }
+    },
+    {
+      "id": 22,
+      "type": "normal",
+      "name": "导入 notify",
+      "description": "注册 notify.webhook 步骤和丢失事件订阅者；细节见 fn-notify。",
+      "jump": {
+        "id": 26,
+        "view": "fn-notify"
+      }
+    },
+    {
+      "id": 23,
+      "type": "normal",
+      "name": "导入 maintenance",
+      "description": "注册 maintenance.prune 步骤；细节见 fn-prune-step。",
+      "jump": {
+        "id": 24,
+        "view": "fn-prune-step"
+      }
+    },
+    {
+      "id": 24,
+      "type": "normal",
+      "name": "把订阅者挂到事件总线",
+      "description": "装饰器只把订阅关系记在列表里；这里才逐个挂到真正的总线。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          68,
+          69
+        ]
+      }
+    },
+    {
+      "id": 25,
+      "type": "normal",
+      "name": "记下这个包已加载",
+      "description": "防止后续重复扫描。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          70
+        ]
+      }
+    },
+    {
+      "id": 26,
+      "type": "normal",
+      "name": "返回步骤名",
+      "description": "调用方拿到已注册的步骤，确认插件加载成功。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          71
+        ]
+      },
+      "jump": {
+        "id": 28
+      },
+      "next": null
+    },
+    {
+      "id": 27,
+      "type": "normal",
+      "name": "附：已注册步骤快照",
+      "description": "返回步骤表的副本，调用方修改它不会影响全局注册表。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          53,
+          54
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 28,
+      "type": "normal",
+      "name": "附：步骤名排序",
+      "description": "返回排序后的名字列表，便于稳定输出和测试。",
+      "code_mapping": {
+        "file": "taskflow/registry.py",
+        "lines": [
+          57,
+          58
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 29,
+      "type": "normal",
+      "name": "附：事件总线实现",
+      "description": "用可重入锁保护订阅表；发布时先复制订阅者列表，再逐个调用，单个订阅者异常只记日志，不影响其他订阅者。",
+      "code_mapping": {
+        "file": "taskflow/events.py",
+        "lines": [
+          "14-15",
+          "17-19",
+          "21-23",
+          "25-35"
+        ]
+      },
+      "next": null
+    }
+  ]
+}

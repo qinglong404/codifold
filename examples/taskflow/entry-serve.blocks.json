@@ -1,0 +1,282 @@
+{
+  "view": {
+    "id": "entry-serve",
+    "name": "serve 子命令：启动整套服务",
+    "description": "这一章是运行时的主支路：serve 要同时启动 HTTP、worker 和调度器，然后阻塞等待停止信号，最后按依赖顺序关闭。读完后你应该知道常驻服务是怎样从零跑起来的。",
+    "kind": "entry"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        31,
+        32,
+        33,
+        34,
+        35,
+        38,
+        39,
+        40,
+        41,
+        42,
+        45
+      ]
+    },
+    {
+      "id": "c35-0",
+      "kind": "branch",
+      "parent": 35,
+      "blocks": [
+        36
+      ],
+      "condition": "缺少组件"
+    },
+    {
+      "id": "c35-1",
+      "kind": "branch",
+      "parent": 35,
+      "blocks": [
+        37
+      ],
+      "condition": "组件齐全"
+    },
+    {
+      "id": "c42-0",
+      "kind": "branch",
+      "parent": 42,
+      "blocks": [
+        43
+      ],
+      "role": "body"
+    },
+    {
+      "id": "f42",
+      "kind": "finally",
+      "parent": 42,
+      "blocks": [
+        44
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "id": 31,
+      "type": "normal",
+      "name": "serve 入口",
+      "description": "用户执行 taskflow serve 时进入这里；配置已经校验过，命令行参数也已经合并好。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          99
+        ]
+      }
+    },
+    {
+      "id": 32,
+      "type": "normal",
+      "name": "创建共享停止事件",
+      "description": "先准备一个所有线程共享的停止开关；后面无论哪个线程收到退出信号，都通过它通知其他线程。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          100
+        ]
+      }
+    },
+    {
+      "id": 33,
+      "type": "normal",
+      "name": "安装信号处理",
+      "description": "主线程把 Ctrl-C 和 SIGTERM 接到这个开关上；用户一按 Ctrl-C，所有线程都会看到停止信号。具体实现见 fn-runtime-control。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          101
+        ]
+      },
+      "jump": {
+        "id": 40,
+        "view": "fn-runtime-control"
+      }
+    },
+    {
+      "id": 34,
+      "type": "normal",
+      "name": "组装完整运行时",
+      "description": "接着把存储、事件总线、插件、流水线、worker、调度器和 HTTP 服务一次性组装起来；serve 模式要求后两者都存在。组装细节见 fn-cli-wiring。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          102,
+          103
+        ]
+      },
+      "jump": {
+        "id": 15,
+        "view": "fn-cli-wiring"
+      }
+    },
+    {
+      "id": 35,
+      "type": "branch",
+      "name": "运行时组件齐全吗？",
+      "description": "如果组装结果缺少 HTTP 服务或调度器，说明运行时没有按 serve 的要求建好。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          104
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c35-0",
+        "c35-1"
+      ]
+    },
+    {
+      "id": 36,
+      "type": "normal",
+      "name": "缺少组件：直接报错",
+      "description": "serve 不能降级运行，抛出运行时错误终止，避免只启动半个服务。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          105
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 37,
+      "type": "normal",
+      "name": "组件齐全：开始启动",
+      "description": "确认运行时完整后，才进入启动阶段。"
+    },
+    {
+      "id": 38,
+      "type": "normal",
+      "name": "启动 worker 线程",
+      "description": "先让配置数量的 worker 线程跑起来；它们会立刻开始领取任务。线程内部循环见 entry-worker-thread。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          106,
+          107
+        ]
+      },
+      "flow": {
+        "id": 11,
+        "view": "entry-worker-thread"
+      }
+    },
+    {
+      "id": 39,
+      "type": "normal",
+      "name": "启动调度器线程",
+      "description": "再启动调度器；它按固定间隔清理过期租约、回收耗尽任务。线程内部见 entry-scheduler-thread。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          108
+        ]
+      },
+      "flow": {
+        "id": 17,
+        "view": "entry-scheduler-thread"
+      }
+    },
+    {
+      "id": 40,
+      "type": "normal",
+      "name": "启动 HTTP 服务线程",
+      "description": "最后把 HTTP 服务放进后台线程；请求处理链见 entry-http。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "109-112"
+        ]
+      },
+      "flow": {
+        "id": 33,
+        "view": "entry-http"
+      }
+    },
+    {
+      "id": 41,
+      "type": "normal",
+      "name": "记录监听地址",
+      "description": "三个后台组件都启动后，打印实际监听的地址，方便用户确认服务已经可用。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          113
+        ]
+      }
+    },
+    {
+      "id": 42,
+      "type": "branch",
+      "name": "等待停止并关闭",
+      "description": "主线程不退出，而是阻塞等待停止信号；无论正常停止还是异常，最后都会执行统一关闭。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          114,
+          116
+        ]
+      },
+      "kind": "try",
+      "select": "single",
+      "branches": [
+        "c42-0"
+      ],
+      "finally": "f42"
+    },
+    {
+      "id": 43,
+      "type": "normal",
+      "name": "等待用户停止",
+      "description": "每秒检查一次停止开关；收到 Ctrl-C 或 SIGTERM 后离开等待。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          115
+        ]
+      },
+      "jump": {
+        "id": 41,
+        "view": "fn-runtime-control"
+      }
+    },
+    {
+      "id": 44,
+      "type": "normal",
+      "name": "按依赖顺序关闭",
+      "description": "先停 HTTP，再停调度器，再等 worker 退出，最后关存储；顺序反了会留下悬挂线程或损坏连接。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          117
+        ]
+      },
+      "jump": {
+        "id": 42,
+        "view": "fn-runtime-control"
+      }
+    },
+    {
+      "id": 45,
+      "type": "normal",
+      "name": "正常退出",
+      "description": "所有组件关闭后，serve 返回 0，进程结束。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          118
+        ]
+      },
+      "next": null
+    }
+  ]
+}

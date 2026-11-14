@@ -1,0 +1,350 @@
+{
+  "view": {
+    "id": "entry-http",
+    "name": "HTTP 请求：从字节到 JSON 响应",
+    "description": "这一章跟一个 HTTP 请求走完全程：先校验请求体长度，再读取请求，按路由表和令牌决定调用哪个接口，最后把结果写成 JSON 响应。接口内部的业务逻辑留给后面的函数章节。",
+    "kind": "entry"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        33,
+        34,
+        35,
+        40,
+        48
+      ]
+    },
+    {
+      "id": "c35-0",
+      "kind": "branch",
+      "parent": 35,
+      "blocks": [
+        36
+      ],
+      "condition": "长度头不是整数"
+    },
+    {
+      "id": "c35-1",
+      "kind": "branch",
+      "parent": 35,
+      "blocks": [
+        37
+      ],
+      "condition": "长度是负数"
+    },
+    {
+      "id": "c35-2",
+      "kind": "branch",
+      "parent": 35,
+      "blocks": [
+        38
+      ],
+      "condition": "超过 64 KiB"
+    },
+    {
+      "id": "c35-3",
+      "kind": "branch",
+      "parent": 35,
+      "blocks": [
+        39
+      ],
+      "condition": "长度合法"
+    },
+    {
+      "id": "c40-0",
+      "kind": "branch",
+      "parent": 40,
+      "blocks": [
+        41
+      ],
+      "condition": "GET /health"
+    },
+    {
+      "id": "c40-1",
+      "kind": "branch",
+      "parent": 40,
+      "blocks": [
+        42
+      ],
+      "condition": "POST /api/jobs"
+    },
+    {
+      "id": "c40-2",
+      "kind": "branch",
+      "parent": 40,
+      "blocks": [
+        43
+      ],
+      "condition": "GET /api/jobs"
+    },
+    {
+      "id": "c40-3",
+      "kind": "branch",
+      "parent": 40,
+      "blocks": [
+        44
+      ],
+      "condition": "GET /api/jobs/{job_id}"
+    },
+    {
+      "id": "c40-4",
+      "kind": "branch",
+      "parent": 40,
+      "blocks": [
+        45
+      ],
+      "condition": "DELETE /api/jobs/{job_id}"
+    },
+    {
+      "id": "c40-5",
+      "kind": "branch",
+      "parent": 40,
+      "blocks": [
+        46
+      ],
+      "condition": "POST /api/maintenance"
+    },
+    {
+      "id": "c40-6",
+      "kind": "branch",
+      "parent": 40,
+      "blocks": [
+        47
+      ],
+      "condition": "没有匹配或鉴权失败"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 33,
+      "type": "normal",
+      "name": "HTTP 方法入口",
+      "description": "GET、POST、DELETE 三个方法都转到同一个内部入口；从这里开始，请求的处理方式不再有区别。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "204-205",
+          "207-208",
+          "210-211"
+        ]
+      },
+      "jump": {
+        "id": 17,
+        "view": "mod-api"
+      }
+    },
+    {
+      "id": 34,
+      "type": "normal",
+      "name": "解析请求行和长度头",
+      "description": "先从 URL 里取出路径和查询参数，再读取 Content-Length；后续所有读取都以这个长度为准。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "213-217"
+        ]
+      }
+    },
+    {
+      "id": 35,
+      "type": "branch",
+      "name": "请求体长度合法吗？",
+      "description": "长度头必须是非负整数，而且不能超过 64 KiB；三种非法情况各自返回不同的状态码。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          218,
+          221,
+          224
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c35-0",
+        "c35-1",
+        "c35-2",
+        "c35-3"
+      ]
+    },
+    {
+      "id": 36,
+      "type": "normal",
+      "name": "不是整数：返回 400",
+      "description": "长度头无法解析，说明请求格式有问题，直接拒绝。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          219,
+          220
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 37,
+      "type": "normal",
+      "name": "是负数：返回 400",
+      "description": "负数长度没有意义，同样按格式错误处理。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          222,
+          223
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 38,
+      "type": "normal",
+      "name": "超过上限：返回 413",
+      "description": "请求体太大，服务器不愿读取；返回 413 让客户端知道是体积问题。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          225,
+          226
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 39,
+      "type": "normal",
+      "name": "读取请求体并组装请求",
+      "description": "按长度读出原始字节，连同方法、路径、查询参数和请求头一起封装成请求对象。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "227-229"
+        ]
+      }
+    },
+    {
+      "id": 40,
+      "type": "branch",
+      "name": "按路由表分发",
+      "description": "用请求方法和路径去匹配路由表；匹配成功后还要检查令牌。具体匹配、鉴权和异常翻译见 fn-api-dispatch。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          230
+        ]
+      },
+      "jump": {
+        "id": 37,
+        "view": "fn-api-dispatch"
+      },
+      "select": "single",
+      "branches": [
+        "c40-0",
+        "c40-1",
+        "c40-2",
+        "c40-3",
+        "c40-4",
+        "c40-5",
+        "c40-6"
+      ]
+    },
+    {
+      "id": 41,
+      "type": "normal",
+      "name": "健康检查：返回状态和步骤",
+      "description": "不需要令牌；返回服务是否正常、任务计数和已注册的步骤。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "118-124"
+        ]
+      }
+    },
+    {
+      "id": 42,
+      "type": "normal",
+      "name": "创建任务接口",
+      "description": "校验任务类型、内容和尝试次数，创建成功后返回 201；细节见 fn-api-create-job。",
+      "jump": {
+        "id": 41,
+        "view": "fn-api-create-job"
+      }
+    },
+    {
+      "id": 43,
+      "type": "normal",
+      "name": "任务列表接口",
+      "description": "按状态过滤任务，并限制返回条数；细节见 fn-api-list-jobs。",
+      "jump": {
+        "id": 15,
+        "view": "fn-api-list-jobs"
+      }
+    },
+    {
+      "id": 44,
+      "type": "normal",
+      "name": "单任务接口：读取一条",
+      "description": "先从路径里解析出任务 id，再查询；不存在时由分发层统一转成 404。id 解析见 fn-api-dispatch。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "157-162"
+        ]
+      },
+      "jump": {
+        "id": 52,
+        "view": "fn-api-dispatch"
+      }
+    },
+    {
+      "id": 45,
+      "type": "normal",
+      "name": "取消任务接口",
+      "description": "只允许取消排队中或失败的任务；状态不允许时返回 409；存储细节见 fn-storage。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "164-172"
+        ]
+      },
+      "jump": {
+        "id": 16,
+        "view": "fn-storage"
+      }
+    },
+    {
+      "id": 46,
+      "type": "normal",
+      "name": "维护任务接口",
+      "description": "不需要用户指定类型，固定创建 maintenance 任务，最多尝试 2 次。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "174-178"
+        ]
+      }
+    },
+    {
+      "id": 47,
+      "type": "normal",
+      "name": "没有匹配或令牌无效",
+      "description": "路由不存在返回 404；需要鉴权但令牌不对返回 401；两种情况都不会进入业务函数。"
+    },
+    {
+      "id": 48,
+      "type": "normal",
+      "name": "发送 JSON 响应",
+      "description": "不管上面命中哪个接口，结果都回到这里：把状态码、内容类型、长度和响应体写回客户端，然后关闭连接。一次请求到此结束。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          231,
+          "233-243",
+          "245-246"
+        ]
+      },
+      "next": null
+    }
+  ]
+}

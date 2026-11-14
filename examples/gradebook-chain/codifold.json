@@ -1,0 +1,14 @@
+{
+  "project": {
+    "name": "学生成绩管理（链路版）",
+    "description": "按运行入口追踪：主流程 + 8 个函数细节；声明区单独存放。",
+    "root": "../gradebook"
+  },
+  "files": [
+    "gradebook.py"
+  ],
+  "views": {
+    "suffix": ".blocks.json",
+    "entry": "main"
+  }
+}

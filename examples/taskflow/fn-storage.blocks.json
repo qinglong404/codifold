@@ -1,0 +1,323 @@
+{
+  "view": {
+    "id": "fn-storage",
+    "name": "存储：连接、事务与任务方法",
+    "description": "这一章按“基础设施、任务方法、助手”的顺序展开存储类：先看它如何初始化、建表、管理连接和事务，再看创建、读取、列表、取消、统计五个任务方法，最后看行转换和关闭。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        9,
+        10,
+        11,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ]
+    },
+    {
+      "id": "c6-0",
+      "kind": "branch",
+      "parent": 6,
+      "blocks": [
+        7
+      ],
+      "condition": "尝试次数越界"
+    },
+    {
+      "id": "c6-1",
+      "kind": "branch",
+      "parent": 6,
+      "blocks": [
+        8
+      ],
+      "condition": "尝试次数合法"
+    },
+    {
+      "id": "c11-0",
+      "kind": "branch",
+      "parent": 11,
+      "blocks": [
+        12
+      ],
+      "condition": "读回失败"
+    },
+    {
+      "id": "c11-1",
+      "kind": "branch",
+      "parent": 11,
+      "blocks": [
+        13
+      ],
+      "condition": "读回成功"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 1,
+      "type": "normal",
+      "name": "第一节：存储初始化",
+      "description": "存储对象一创建就展开数据库路径、准备线程本地存储和建表锁，并立即建表；调用方拿到对象时表已经可用。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "91-98"
+        ]
+      },
+      "jump": {
+        "id": 9,
+        "view": "mod-storage"
+      },
+      "next": null
+    },
+    {
+      "id": 2,
+      "type": "normal",
+      "name": "建表只做一次",
+      "description": "加锁后执行建表语句；如果表已经存在就直接返回，避免多个线程重复建表。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "100-110"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 3,
+      "type": "normal",
+      "name": "每个线程一个连接",
+      "description": "连接放在线程本地，避免多个线程共用同一个数据库连接；连接打开后设置写前日志、忙等待超时和行工厂。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "112-120"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 4,
+      "type": "normal",
+      "name": "写操作统一走事务",
+      "description": "写事务提前拿写锁；正常提交，异常回滚，保证一次写操作要么全成要么全不成。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "122-132"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 5,
+      "type": "normal",
+      "name": "第二节：创建任务",
+      "description": "创建方法接收任务类型、内容和最大尝试次数，先校验次数，再插入一条排队任务。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          134,
+          135
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "type": "branch",
+      "name": "尝试次数在 1 到 10 之间吗？",
+      "description": "太小会让任务没有重试机会，太大可能让坏任务长期占用 worker。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          136
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c6-0",
+        "c6-1"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "normal",
+      "name": "非法：拒绝",
+      "description": "提示最大尝试次数的允许范围。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          137
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 8,
+      "type": "normal",
+      "name": "合法：准备写入",
+      "description": "记录当前时间，准备插入新记录。"
+    },
+    {
+      "id": 9,
+      "type": "normal",
+      "name": "插入新任务",
+      "description": "任务内容序列化成 JSON，状态设为排队中，尝试次数从 0 开始。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "138-145"
+        ]
+      },
+      "jump": {
+        "id": 4
+      }
+    },
+    {
+      "id": 10,
+      "type": "normal",
+      "name": "读回刚写入的任务",
+      "description": "插入后立即按 id 查询，确认写入成功并拿到数据库生成的字段。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          146,
+          147
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "type": "branch",
+      "name": "读回成功了吗？",
+      "description": "刚插入却读不到，说明写入或连接出了问题。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          148
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c11-0",
+        "c11-1"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "normal",
+      "name": "失败：抛运行时错误",
+      "description": "这是程序内部错误，不应该静默返回空任务。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          149
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 13,
+      "type": "normal",
+      "name": "成功：返回任务",
+      "description": "调用方拿到带 id 的完整任务；下一节换一个方法，看如何按 id 读取。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          150
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 14,
+      "type": "normal",
+      "name": "方法二：按 id 读取",
+      "description": "直接用主键查询；没有记录时返回空值，让调用方决定如何提示。行转换逻辑见本视图末尾。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "152-156"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 15,
+      "type": "normal",
+      "name": "方法三：按状态列出任务",
+      "description": "先检查条数限制在 1 到 200 之间，再按合法状态过滤，最后按 id 倒序返回。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "158-175"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 16,
+      "type": "normal",
+      "name": "方法四：取消任务",
+      "description": "只允许取消排队中或失败的任务；更新到一行才算成功，否则说明状态不允许。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "227-236"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 17,
+      "type": "normal",
+      "name": "方法五：统计各状态数量",
+      "description": "从五种状态都为零开始，按数据库里的实际分布累加，返回一个完整计数。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "285-292"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 18,
+      "type": "normal",
+      "name": "附：行转任务对象",
+      "description": "把数据库行还原成任务对象，并把 JSON 字段解析回字典；所有查询都靠它统一转换。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "74-88"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 19,
+      "type": "normal",
+      "name": "收尾：关闭当前线程的连接",
+      "description": "只关闭调用线程自己的连接；其他线程的连接不受影响。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "294-298"
+        ]
+      },
+      "next": null
+    }
+  ]
+}

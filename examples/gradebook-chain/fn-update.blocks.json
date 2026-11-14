@@ -1,0 +1,116 @@
+{
+  "view": {
+    "id": "fn-update",
+    "name": "修改成绩",
+    "description": "update_score：找到学生后改分并保存。"
+  },
+  "blocks": [
+    {
+      "id": 1,
+      "type": "normal",
+      "name": "函数入口",
+      "description": "入参：学生列表、姓名、新成绩；返回是否修改成功。",
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          "44-45"
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "type": "normal",
+      "name": "查找学生",
+      "description": "调用 find_student；详见 fn-find。",
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          46
+        ]
+      },
+      "jump": {
+        "view": "fn-find",
+        "id": 1
+      }
+    },
+    {
+      "id": 3,
+      "type": "branch",
+      "select": "single",
+      "name": "是否找到",
+      "description": "找不到就直接失败。",
+      "branches": [
+        {
+          "condition": "未找到",
+          "steps": [
+            {
+              "id": 4,
+              "type": "normal",
+              "name": "返回失败",
+              "description": "不修改任何数据。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  48
+                ]
+              },
+              "next": null
+            }
+          ]
+        },
+        {
+          "condition": "找到",
+          "steps": [
+            {
+              "id": 5,
+              "type": "normal",
+              "name": "更新成绩",
+              "description": "写回学生对象的 score。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  49
+                ]
+              }
+            },
+            {
+              "id": 6,
+              "type": "normal",
+              "name": "保存列表",
+              "description": "调用 save_students；详见 fn-save。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  50
+                ]
+              },
+              "jump": {
+                "view": "fn-save",
+                "id": 1
+              }
+            },
+            {
+              "id": 7,
+              "type": "normal",
+              "name": "返回成功",
+              "description": "返回 True。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  51
+                ]
+              },
+              "next": null
+            }
+          ]
+        }
+      ],
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          47
+        ]
+      }
+    }
+  ]
+}

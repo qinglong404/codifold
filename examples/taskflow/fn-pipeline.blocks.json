@@ -1,0 +1,451 @@
+{
+  "view": {
+    "id": "fn-pipeline",
+    "name": "流水线：按计划执行步骤",
+    "description": "这一章展开流水线的执行函数（execute）：它先拿到任务对应的步骤计划，再逐个步骤执行、累计输出；任何一步失败就提前返回，全部成功才合并输出。末尾附上计划查询函数 plan_for。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        50,
+        51,
+        54,
+        55,
+        72
+      ]
+    },
+    {
+      "id": "c51-0",
+      "kind": "branch",
+      "parent": 51,
+      "blocks": [
+        52
+      ],
+      "role": "body"
+    },
+    {
+      "id": "c51-1",
+      "kind": "branch",
+      "parent": 51,
+      "blocks": [
+        53
+      ],
+      "condition": "任务类型未知",
+      "role": "except"
+    },
+    {
+      "id": "c55-0",
+      "kind": "branch",
+      "parent": 55,
+      "blocks": [
+        56,
+        61
+      ],
+      "condition": "还有步骤"
+    },
+    {
+      "id": "c56-0",
+      "kind": "branch",
+      "parent": 56,
+      "blocks": [
+        57
+      ],
+      "condition": "步骤名是 csv.import"
+    },
+    {
+      "id": "c56-1",
+      "kind": "branch",
+      "parent": 56,
+      "blocks": [
+        58
+      ],
+      "condition": "步骤名是 report.summarize"
+    },
+    {
+      "id": "c56-2",
+      "kind": "branch",
+      "parent": 56,
+      "blocks": [
+        59
+      ],
+      "condition": "步骤名是 notify.webhook"
+    },
+    {
+      "id": "c56-3",
+      "kind": "branch",
+      "parent": 56,
+      "blocks": [
+        60
+      ],
+      "condition": "步骤名是 maintenance.prune"
+    },
+    {
+      "id": "c61-0",
+      "kind": "branch",
+      "parent": 61,
+      "blocks": [
+        62,
+        63
+      ],
+      "condition": "步骤未注册"
+    },
+    {
+      "id": "c61-1",
+      "kind": "branch",
+      "parent": 61,
+      "blocks": [
+        64,
+        65,
+        66
+      ],
+      "condition": "步骤已注册"
+    },
+    {
+      "id": "c66-0",
+      "kind": "branch",
+      "parent": 66,
+      "blocks": [
+        67,
+        68
+      ],
+      "condition": "步骤执行失败"
+    },
+    {
+      "id": "c66-1",
+      "kind": "branch",
+      "parent": 66,
+      "blocks": [
+        69
+      ],
+      "condition": "步骤执行成功"
+    },
+    {
+      "id": "c55-1",
+      "kind": "branch",
+      "parent": 55,
+      "blocks": [
+        70,
+        71
+      ],
+      "condition": "没有更多步骤"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 50,
+      "type": "normal",
+      "name": "执行函数接手",
+      "description": "它拿到一条任务，要先知道这条任务该做哪些步骤；计划解析失败就直接返回失败结果。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          52
+        ]
+      }
+    },
+    {
+      "id": 51,
+      "type": "branch",
+      "name": "先解析任务计划",
+      "description": "按任务类型查计划表；未知类型不应该进入执行阶段，但这里仍然做兜底。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          53
+        ]
+      },
+      "kind": "try",
+      "select": "single",
+      "branches": [
+        "c51-0",
+        "c51-1"
+      ]
+    },
+    {
+      "id": 52,
+      "type": "normal",
+      "name": "读取步骤序列",
+      "description": "调用计划查询函数得到步骤名列表；具体查表逻辑见本视图末尾。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          54
+        ]
+      },
+      "jump": {
+        "id": 72
+      }
+    },
+    {
+      "id": 53,
+      "type": "normal",
+      "name": "计划失败：直接返回失败",
+      "description": "没有计划就一步也不执行，返回一个带错误的失败结果。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          55,
+          56
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 54,
+      "type": "normal",
+      "name": "准备执行上下文",
+      "description": "初始化输出字典、步骤结果列表和上下文；上下文里带着任务、任务内容、已有输出和存储，供每个步骤使用。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          "57-64"
+        ]
+      }
+    },
+    {
+      "id": 55,
+      "type": "branch",
+      "name": "还有步骤要执行吗？",
+      "description": "按计划顺序逐个处理；每轮取出一个步骤，执行完再回到这里。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          65
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c55-0",
+        "c55-1"
+      ]
+    },
+    {
+      "id": 56,
+      "type": "branch",
+      "name": "按步骤名选择处理器",
+      "description": "计划里只有四个内置步骤名；每个名字对应一个注册过的处理函数。这里只确认名字对应哪个处理器，真正的执行在下面统一进行。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          66
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c56-0",
+        "c56-1",
+        "c56-2",
+        "c56-3"
+      ]
+    },
+    {
+      "id": 57,
+      "type": "normal",
+      "name": "csv.import：导入 CSV",
+      "description": "读取任务内容里的路径，解析 CSV 行；细节见 fn-import-csv。",
+      "jump": {
+        "id": 40,
+        "view": "fn-import-csv"
+      }
+    },
+    {
+      "id": 58,
+      "type": "normal",
+      "name": "report.summarize：汇总金额",
+      "description": "把上一步的行按人汇总；细节见 fn-summarize。",
+      "jump": {
+        "id": 20,
+        "view": "fn-summarize"
+      }
+    },
+    {
+      "id": 59,
+      "type": "normal",
+      "name": "notify.webhook：发送通知",
+      "description": "把汇总结果发送到配置的地址；细节见 fn-notify。",
+      "jump": {
+        "id": 26,
+        "view": "fn-notify"
+      }
+    },
+    {
+      "id": 60,
+      "type": "normal",
+      "name": "maintenance.prune：清理历史",
+      "description": "删除过期的已完成任务；细节见 fn-prune-step。",
+      "jump": {
+        "id": 24,
+        "view": "fn-prune-step"
+      }
+    },
+    {
+      "id": 61,
+      "type": "branch",
+      "name": "这个步骤注册了吗？",
+      "description": "计划表里写了名字，不代表运行时一定注册过；未注册的步骤不能执行。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          67
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c61-0",
+        "c61-1"
+      ]
+    },
+    {
+      "id": 62,
+      "type": "normal",
+      "name": "未注册：记录失败",
+      "description": "生成一个失败的步骤结果，说明这个步骤名没有对应的处理器。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          68,
+          69
+        ]
+      }
+    },
+    {
+      "id": 63,
+      "type": "normal",
+      "name": "未注册：提前返回",
+      "description": "保留前面已经完成的步骤结果，整体标记为失败。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          70,
+          71
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 64,
+      "type": "normal",
+      "name": "执行单个步骤",
+      "description": "调用步骤处理器，带上重试和退避；细节见 fn-run-step。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          72
+        ]
+      },
+      "jump": {
+        "id": 33,
+        "view": "fn-run-step"
+      }
+    },
+    {
+      "id": 65,
+      "type": "normal",
+      "name": "记录这一步的结果",
+      "description": "把步骤名、尝试次数、耗时、输出或错误追加到结果列表。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          73
+        ]
+      }
+    },
+    {
+      "id": 66,
+      "type": "branch",
+      "name": "这一步成功了吗？",
+      "description": "任何一步失败都会终止整条流水线；后面的步骤不再执行。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          74
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c66-0",
+        "c66-1"
+      ]
+    },
+    {
+      "id": 67,
+      "type": "normal",
+      "name": "失败：汇总原因",
+      "description": "把步骤名和错误信息拼成整体错误，方便调用方定位。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          75
+        ]
+      }
+    },
+    {
+      "id": 68,
+      "type": "normal",
+      "name": "失败：提前返回",
+      "description": "返回失败结果，但保留已经完成步骤的输出。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          76,
+          77
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 69,
+      "type": "normal",
+      "name": "成功：保存输出并继续",
+      "description": "把这一步的输出写进输出字典，然后回到循环头处理下一步。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          78
+        ]
+      },
+      "next": 55
+    },
+    {
+      "id": 70,
+      "type": "normal",
+      "name": "全部完成：合并输出",
+      "description": "后执行的步骤覆盖先执行的同名输出，得到最终结果。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          "79-81"
+        ]
+      }
+    },
+    {
+      "id": 71,
+      "type": "normal",
+      "name": "返回成功结果",
+      "description": "带上步骤明细和合并后的输出；调用方据此判断任务成功。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          82
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 72,
+      "type": "normal",
+      "name": "附：计划查询如何实现",
+      "description": "按任务类型在计划表里找步骤序列；找不到就报告未知类型，由调用方决定如何呈现。",
+      "code_mapping": {
+        "file": "taskflow/pipeline.py",
+        "lines": [
+          "46-50"
+        ]
+      },
+      "next": null
+    }
+  ]
+}

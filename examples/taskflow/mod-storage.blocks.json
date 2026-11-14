@@ -1,0 +1,77 @@
+{
+  "view": {
+    "id": "mod-storage",
+    "name": "存储模块的定义：状态、任务与表结构",
+    "description": "这一章解释存储模块里的三个基础定义：任务状态、任务记录类型和建表语句；后面的存储方法都围绕它们展开。",
+    "kind": "struct"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        9,
+        10,
+        11,
+        12
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "id": 9,
+      "type": "normal",
+      "name": "模块声明",
+      "description": "文件开头说明存储职责，导入标准库和 SQLite 相关模块。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          1,
+          2,
+          "4-12"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 10,
+      "type": "normal",
+      "name": "任务状态",
+      "description": "任务只有五种状态：排队、运行中、成功、失败、取消；所有查询和更新都基于这五个值。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "15-20"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 11,
+      "type": "normal",
+      "name": "任务记录类型",
+      "description": "保存任务 id、类型、内容、状态、尝试次数、结果和时间戳；序列化方法负责对外输出。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "23-36",
+          "38-52"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 12,
+      "type": "normal",
+      "name": "建表语句",
+      "description": "定义任务表的结构，以及按状态和创建时间查询的索引；存储初始化时执行它。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "55-71"
+        ]
+      },
+      "next": null
+    }
+  ]
+}

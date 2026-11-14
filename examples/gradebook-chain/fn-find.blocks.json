@@ -1,0 +1,104 @@
+{
+  "view": {
+    "id": "fn-find",
+    "name": "查找学生",
+    "description": "find_student：按姓名查找，找不到返回 None。"
+  },
+  "blocks": [
+    {
+      "id": 1,
+      "type": "normal",
+      "name": "函数入口",
+      "description": "入参：学生列表、姓名；返回学生对象或 None。",
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          "27-28"
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "type": "branch",
+      "select": "single",
+      "name": "还有下一个学生",
+      "description": "逐个检查，直到找到或耗尽。",
+      "branches": [
+        {
+          "condition": "有",
+          "steps": [
+            {
+              "id": 3,
+              "type": "branch",
+              "select": "single",
+              "name": "姓名是否匹配",
+              "description": "比较当前学生姓名。",
+              "branches": [
+                {
+                  "condition": "匹配",
+                  "steps": [
+                    {
+                      "id": 4,
+                      "type": "normal",
+                      "name": "返回该学生",
+                      "description": "结束查找。",
+                      "code_mapping": {
+                        "file": "gradebook.py",
+                        "lines": [
+                          31
+                        ]
+                      },
+                      "next": null
+                    }
+                  ]
+                },
+                {
+                  "condition": "不匹配",
+                  "steps": [
+                    {
+                      "id": 5,
+                      "type": "normal",
+                      "name": "继续检查",
+                      "description": "回到循环头。",
+                      "next": 2
+                    }
+                  ]
+                }
+              ],
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  30
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "condition": "没有",
+          "steps": [
+            {
+              "id": 6,
+              "type": "normal",
+              "name": "返回 None",
+              "description": "列表里没有该姓名。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  32
+                ]
+              },
+              "next": null
+            }
+          ]
+        }
+      ],
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          29
+        ]
+      }
+    }
+  ]
+}

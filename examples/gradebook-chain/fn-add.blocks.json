@@ -1,0 +1,104 @@
+{
+  "view": {
+    "id": "fn-add",
+    "name": "新增学生",
+    "description": "add_student：查重、追加、保存，返回是否成功。"
+  },
+  "blocks": [
+    {
+      "id": 1,
+      "type": "normal",
+      "name": "函数入口",
+      "description": "入参：学生列表、姓名、成绩；返回是否新增成功。",
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          "35-36"
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "type": "branch",
+      "select": "single",
+      "name": "姓名是否已存在",
+      "description": "复用 find_student 查重；详见 fn-find。",
+      "branches": [
+        {
+          "condition": "已存在",
+          "steps": [
+            {
+              "id": 3,
+              "type": "normal",
+              "name": "返回失败",
+              "description": "不修改列表，返回 False。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  38
+                ]
+              },
+              "next": null
+            }
+          ]
+        },
+        {
+          "condition": "不存在",
+          "steps": [
+            {
+              "id": 4,
+              "type": "normal",
+              "name": "追加学生",
+              "description": "把姓名和成绩加入列表。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  39
+                ]
+              }
+            },
+            {
+              "id": 5,
+              "type": "normal",
+              "name": "写回磁盘",
+              "description": "调用 save_students；详见 fn-save。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  40
+                ]
+              },
+              "jump": {
+                "view": "fn-save",
+                "id": 1
+              }
+            },
+            {
+              "id": 6,
+              "type": "normal",
+              "name": "返回成功",
+              "description": "返回 True。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  41
+                ]
+              },
+              "next": null
+            }
+          ]
+        }
+      ],
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          37
+        ]
+      },
+      "jump": {
+        "view": "fn-find",
+        "id": 1
+      }
+    }
+  ]
+}

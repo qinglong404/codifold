@@ -1,0 +1,144 @@
+{
+  "view": {
+    "id": "fn-api-list-jobs",
+    "name": "任务列表接口：过滤与限流",
+    "description": "这一章展开 GET /api/jobs：它从查询参数里读取状态和条数，按状态过滤任务，最后返回任务数组。末尾附上查询参数读取的实现。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        15,
+        16,
+        19,
+        20,
+        21
+      ]
+    },
+    {
+      "id": "c16-0",
+      "kind": "branch",
+      "parent": 16,
+      "blocks": [
+        17
+      ],
+      "role": "body"
+    },
+    {
+      "id": "c16-1",
+      "kind": "branch",
+      "parent": 16,
+      "blocks": [
+        18
+      ],
+      "condition": "无法转成整数",
+      "role": "except"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 15,
+      "type": "normal",
+      "name": "接口接手",
+      "description": "请求已经通过分发层；查询参数从查询字符串读取（实现见本视图末尾）。这个函数只负责列出任务，不修改任何数据。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "146-148"
+        ]
+      },
+      "jump": {
+        "id": 21
+      }
+    },
+    {
+      "id": 16,
+      "type": "branch",
+      "name": "先解析条数限制",
+      "description": "limit 来自查询字符串，是文本；需要先转成整数才能用于数据库查询。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          150
+        ]
+      },
+      "kind": "try",
+      "select": "single",
+      "branches": [
+        "c16-0",
+        "c16-1"
+      ]
+    },
+    {
+      "id": 17,
+      "type": "normal",
+      "name": "转换成整数",
+      "description": "不写 limit 时默认 50；转换失败会抛出参数错误。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          149,
+          151
+        ]
+      }
+    },
+    {
+      "id": 18,
+      "type": "normal",
+      "name": "转换失败：参数错误",
+      "description": "提示 limit 必须是整数，分发层会转成 400。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          152,
+          153
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 19,
+      "type": "normal",
+      "name": "按状态查询任务",
+      "description": "state 为空时不过滤；有值时只返回对应状态的任务，并按 id 倒序；细节见 fn-storage。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          154
+        ]
+      },
+      "jump": {
+        "id": 15,
+        "view": "fn-storage"
+      }
+    },
+    {
+      "id": 20,
+      "type": "normal",
+      "name": "返回 200 和任务数组",
+      "description": "逐条序列化后返回；客户端拿到的是任务列表，不包含统计。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          155
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 21,
+      "type": "normal",
+      "name": "附：查询参数如何读取",
+      "description": "取同名参数的第一个值；没有这个参数时返回默认值。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "42-44"
+        ]
+      },
+      "next": null
+    }
+  ]
+}

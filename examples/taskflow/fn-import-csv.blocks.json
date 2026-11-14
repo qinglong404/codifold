@@ -1,0 +1,393 @@
+{
+  "view": {
+    "id": "fn-import-csv",
+    "name": "csv.import：把 CSV 变成结构化行",
+    "description": "这一章展开第一个插件步骤：它从任务内容里取文件路径，检查文件、表头和每一行的金额，最后返回列名、解析后的行和来源路径。开头是插件模块声明，末尾附上失败事件订阅者。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        39,
+        40,
+        41,
+        42,
+        45,
+        48,
+        51,
+        57
+      ]
+    },
+    {
+      "id": "c42-0",
+      "kind": "branch",
+      "parent": 42,
+      "blocks": [
+        43
+      ],
+      "condition": "路径不合法"
+    },
+    {
+      "id": "c42-1",
+      "kind": "branch",
+      "parent": 42,
+      "blocks": [
+        44
+      ],
+      "condition": "路径合法"
+    },
+    {
+      "id": "c45-0",
+      "kind": "branch",
+      "parent": 45,
+      "blocks": [
+        46
+      ],
+      "condition": "文件不存在"
+    },
+    {
+      "id": "c45-1",
+      "kind": "branch",
+      "parent": 45,
+      "blocks": [
+        47
+      ],
+      "condition": "文件存在"
+    },
+    {
+      "id": "c48-0",
+      "kind": "branch",
+      "parent": 48,
+      "blocks": [
+        49
+      ],
+      "condition": "缺少必需列"
+    },
+    {
+      "id": "c48-1",
+      "kind": "branch",
+      "parent": 48,
+      "blocks": [
+        50
+      ],
+      "condition": "列齐全"
+    },
+    {
+      "id": "c51-0",
+      "kind": "branch",
+      "parent": 51,
+      "blocks": [
+        52,
+        55
+      ],
+      "condition": "还有下一行"
+    },
+    {
+      "id": "c52-0",
+      "kind": "branch",
+      "parent": 52,
+      "blocks": [
+        53
+      ],
+      "role": "body"
+    },
+    {
+      "id": "c52-1",
+      "kind": "branch",
+      "parent": 52,
+      "blocks": [
+        54
+      ],
+      "condition": "金额转换失败",
+      "role": "except"
+    },
+    {
+      "id": "c51-1",
+      "kind": "branch",
+      "parent": 51,
+      "blocks": [
+        56
+      ],
+      "condition": "没有下一行"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 39,
+      "type": "normal",
+      "name": "开头：插件模块声明",
+      "description": "这个模块只依赖标准库，使用 csv 读取、logging 记录日志；顶部声明了日志器。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          1,
+          2,
+          "4-7",
+          9,
+          11
+        ]
+      }
+    },
+    {
+      "id": 40,
+      "type": "normal",
+      "name": "步骤入口",
+      "description": "这个函数被注册为 csv.import，失败后最多重试 2 次，每次等待 0.1 秒。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          14,
+          15,
+          16
+        ]
+      },
+      "jump": {
+        "id": 11,
+        "view": "fn-registry-step"
+      }
+    },
+    {
+      "id": 41,
+      "type": "normal",
+      "name": "先读文件路径",
+      "description": "路径放在任务内容的 path 字段里；没有路径就无法知道该读哪个文件。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          17,
+          18
+        ]
+      }
+    },
+    {
+      "id": 42,
+      "type": "branch",
+      "name": "路径是非空字符串吗？",
+      "description": "空字符串、缺失或非字符串都不行。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          19
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c42-0",
+        "c42-1"
+      ]
+    },
+    {
+      "id": 43,
+      "type": "normal",
+      "name": "不是：参数错误",
+      "description": "提示路径必须是非空字符串，步骤直接失败。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          20
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 44,
+      "type": "normal",
+      "name": "是：展开路径",
+      "description": "支持 ~ 写法，把用户目录展开成绝对路径。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          21
+        ]
+      }
+    },
+    {
+      "id": 45,
+      "type": "branch",
+      "name": "文件存在吗？",
+      "description": "路径存在但文件不在，属于用户输入问题，需要明确报错。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          22
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c45-0",
+        "c45-1"
+      ]
+    },
+    {
+      "id": 46,
+      "type": "normal",
+      "name": "不存在：文件未找到",
+      "description": "报告文件未找到，并带上具体路径，方便定位。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          23
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 47,
+      "type": "normal",
+      "name": "存在：打开并读表头",
+      "description": "读取第一行，得到列名；后面每一行都会变成以列名为键的字典。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          24,
+          25,
+          26
+        ]
+      }
+    },
+    {
+      "id": 48,
+      "type": "branch",
+      "name": "表头包含姓名和金额吗？",
+      "description": "汇总步骤需要姓名和金额；缺列就无法继续。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          27
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c48-0",
+        "c48-1"
+      ]
+    },
+    {
+      "id": 49,
+      "type": "normal",
+      "name": "缺列：参数错误",
+      "description": "提示 CSV 必须同时包含姓名和金额两列。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          28
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 50,
+      "type": "normal",
+      "name": "齐全：准备结果",
+      "description": "初始化结果行；行号从 2 开始，因为第 1 行是表头。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          29
+        ]
+      }
+    },
+    {
+      "id": 51,
+      "type": "branch",
+      "name": "还有下一行吗？",
+      "description": "逐行读取，直到文件结束。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          30
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c51-0",
+        "c51-1"
+      ]
+    },
+    {
+      "id": 52,
+      "type": "branch",
+      "name": "转换这一行",
+      "description": "把金额转成浮点数，同时保留姓名和原始行号。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          31
+        ]
+      },
+      "kind": "try",
+      "select": "single",
+      "branches": [
+        "c52-0",
+        "c52-1"
+      ]
+    },
+    {
+      "id": 53,
+      "type": "normal",
+      "name": "追加解析后的行",
+      "description": "一行变成姓名、金额和行号三个字段，放进结果列表。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          "32-36"
+        ]
+      }
+    },
+    {
+      "id": 54,
+      "type": "normal",
+      "name": "转换失败：带行号报错",
+      "description": "指出具体哪一行的金额不是数字，方便用户直接修文件；这一步失败后不再继续读取。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          37,
+          38
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 55,
+      "type": "normal",
+      "name": "处理下一行",
+      "description": "回到循环头，继续读。",
+      "next": 51
+    },
+    {
+      "id": 56,
+      "type": "normal",
+      "name": "读完：返回结果",
+      "description": "返回列名、解析后的行和来源路径，交给下一个步骤汇总。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          39
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 57,
+      "type": "normal",
+      "name": "附：任务失败订阅者",
+      "description": "订阅任务失败事件；任务失败时记录任务 id 和错误原因，便于排查。",
+      "code_mapping": {
+        "file": "taskflow/plugins/csv_source.py",
+        "lines": [
+          42,
+          43,
+          44
+        ]
+      },
+      "jump": {
+        "id": 18,
+        "view": "fn-registry-step"
+      },
+      "next": null
+    }
+  ]
+}

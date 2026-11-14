@@ -1,0 +1,324 @@
+{
+  "view": {
+    "id": "fn-api-dispatch",
+    "name": "HTTP 分发：匹配路由、鉴权、翻译异常",
+    "description": "这一章展开 API 的分发函数（Api.dispatch）：它拿到一个请求后，先找路由，再检查令牌，最后调用对应的处理函数，并把业务异常翻译成合适的 HTTP 状态码。末尾附上鉴权和任务 id 解析两个小助手。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        37,
+        38,
+        39,
+        40,
+        43,
+        46,
+        51,
+        52
+      ]
+    },
+    {
+      "id": "c40-0",
+      "kind": "branch",
+      "parent": 40,
+      "blocks": [
+        41
+      ],
+      "condition": "没有匹配的路由"
+    },
+    {
+      "id": "c40-1",
+      "kind": "branch",
+      "parent": 40,
+      "blocks": [
+        42
+      ],
+      "condition": "匹配到路由"
+    },
+    {
+      "id": "c43-0",
+      "kind": "branch",
+      "parent": 43,
+      "blocks": [
+        44
+      ],
+      "condition": "鉴权失败"
+    },
+    {
+      "id": "c43-1",
+      "kind": "branch",
+      "parent": 43,
+      "blocks": [
+        45
+      ],
+      "condition": "鉴权通过"
+    },
+    {
+      "id": "c46-0",
+      "kind": "branch",
+      "parent": 46,
+      "blocks": [
+        47
+      ],
+      "role": "body"
+    },
+    {
+      "id": "c46-1",
+      "kind": "branch",
+      "parent": 46,
+      "blocks": [
+        48
+      ],
+      "condition": "业务函数抛参数错误",
+      "role": "except"
+    },
+    {
+      "id": "c46-2",
+      "kind": "branch",
+      "parent": 46,
+      "blocks": [
+        49
+      ],
+      "condition": "业务函数报告资源不存在",
+      "role": "except"
+    },
+    {
+      "id": "c46-3",
+      "kind": "branch",
+      "parent": 46,
+      "blocks": [
+        50
+      ],
+      "condition": "业务函数抛未知异常",
+      "role": "except"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 37,
+      "type": "normal",
+      "name": "分发函数接手",
+      "description": "它接收一个已经组装好的请求，返回状态码和响应体；后面的所有接口都经过这里。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          83
+        ]
+      }
+    },
+    {
+      "id": 38,
+      "type": "normal",
+      "name": "先准备一个空结果",
+      "description": "匹配结果先设为空；如果遍历完路由表还没有命中，就用这个空值走 404。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          84
+        ]
+      }
+    },
+    {
+      "id": 39,
+      "type": "normal",
+      "name": "按方法和路径找路由",
+      "description": "先比较请求方法，再用正则匹配路径；一旦命中就停止遍历，避免后面的路由覆盖前面的。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "85-91"
+        ]
+      }
+    },
+    {
+      "id": 40,
+      "type": "branch",
+      "name": "找到路由了吗？",
+      "description": "没有命中说明客户端请求了一个不存在的地址。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          92
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c40-0",
+        "c40-1"
+      ]
+    },
+    {
+      "id": 41,
+      "type": "normal",
+      "name": "没有匹配：返回 404",
+      "description": "告诉客户端路由不存在，不进入任何业务函数。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          93
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 42,
+      "type": "normal",
+      "name": "有匹配：取出路由和处理参数",
+      "description": "得到处理函数名和路径参数，准备鉴权和调用。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          94
+        ]
+      }
+    },
+    {
+      "id": 43,
+      "type": "branch",
+      "name": "这个接口需要鉴权吗？",
+      "description": "需要鉴权的接口会检查 X-API-Token 或 Bearer 令牌；没配置令牌时视为不启用鉴权。具体比较方式见本视图末尾。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          95
+        ]
+      },
+      "jump": {
+        "id": 51
+      },
+      "select": "single",
+      "branches": [
+        "c43-0",
+        "c43-1"
+      ]
+    },
+    {
+      "id": 44,
+      "type": "normal",
+      "name": "鉴权失败：返回 401",
+      "description": "令牌缺失或不匹配，直接拒绝请求。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          96
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 45,
+      "type": "normal",
+      "name": "通过鉴权：取出处理函数",
+      "description": "按路由里记录的方法名，从 API 对象上找到真正的处理函数。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          97
+        ]
+      }
+    },
+    {
+      "id": 46,
+      "type": "branch",
+      "name": "调用处理函数",
+      "description": "业务函数返回状态码和响应体；这里负责把各类异常翻译成 HTTP 响应。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          98
+        ]
+      },
+      "kind": "try",
+      "select": "single",
+      "branches": [
+        "c46-0",
+        "c46-1",
+        "c46-2",
+        "c46-3"
+      ]
+    },
+    {
+      "id": 47,
+      "type": "normal",
+      "name": "正常调用",
+      "description": "具体接口的实现分别在 fn-api-create-job、fn-api-list-jobs 等章节。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          99
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 48,
+      "type": "normal",
+      "name": "参数错误：返回 400",
+      "description": "业务函数抛参数错误，说明客户端给的输入不合法。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          100,
+          101
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 49,
+      "type": "normal",
+      "name": "找不到：返回 404",
+      "description": "业务函数报告资源不存在，通常是任务 id 没有对应的记录。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          102,
+          103
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 50,
+      "type": "normal",
+      "name": "未知异常：返回 500",
+      "description": "记录完整堆栈，但只向客户端暴露 internal error，避免泄漏内部细节。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "104-106"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 51,
+      "type": "normal",
+      "name": "附：鉴权如何实现",
+      "description": "先看 X-API-Token 请求头；没有就要求 Authorization: Bearer，并用常量时间比较，降低时序攻击风险。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "108-116"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 52,
+      "type": "normal",
+      "name": "附：任务 id 如何解析",
+      "description": "从路径参数里取任务 id，必须是正整数；非整数或小于等于 0 都按参数错误处理。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "180-188"
+        ]
+      },
+      "next": null
+    }
+  ]
+}

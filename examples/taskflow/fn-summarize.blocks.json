@@ -1,0 +1,166 @@
+{
+  "view": {
+    "id": "fn-summarize",
+    "name": "report.summarize：按人汇总金额",
+    "description": "这一章展开汇总步骤：它拿到上一步的 CSV 行，按姓名累计金额和次数，最后输出总额、人数和排行榜。开头是模块声明，末尾附上成功事件订阅者。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        19,
+        20,
+        21,
+        24,
+        25,
+        26,
+        27
+      ]
+    },
+    {
+      "id": "c21-0",
+      "kind": "branch",
+      "parent": 21,
+      "blocks": [
+        22
+      ],
+      "condition": "没有数据行"
+    },
+    {
+      "id": "c21-1",
+      "kind": "branch",
+      "parent": 21,
+      "blocks": [
+        23
+      ],
+      "condition": "有数据行"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 19,
+      "type": "normal",
+      "name": "开头：插件模块声明",
+      "description": "模块只依赖标准库，使用默认字典做聚合，并声明了日志器。",
+      "code_mapping": {
+        "file": "taskflow/plugins/report.py",
+        "lines": [
+          1,
+          2,
+          "4-6",
+          8,
+          10
+        ]
+      }
+    },
+    {
+      "id": 20,
+      "type": "normal",
+      "name": "步骤入口",
+      "description": "这个函数被注册为 report.summarize，失败后最多重试 1 次。",
+      "code_mapping": {
+        "file": "taskflow/plugins/report.py",
+        "lines": [
+          13,
+          14,
+          15
+        ]
+      }
+    },
+    {
+      "id": 21,
+      "type": "branch",
+      "name": "有可汇总的数据行吗？",
+      "description": "上一步可能没有产出任何行；没有数据就无法汇总。",
+      "code_mapping": {
+        "file": "taskflow/plugins/report.py",
+        "lines": [
+          16
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c21-0",
+        "c21-1"
+      ]
+    },
+    {
+      "id": 22,
+      "type": "normal",
+      "name": "没有：参数错误",
+      "description": "提示没有可汇总的数据行，步骤失败。",
+      "code_mapping": {
+        "file": "taskflow/plugins/report.py",
+        "lines": [
+          17
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 23,
+      "type": "normal",
+      "name": "有：准备聚合表",
+      "description": "用两个字典分别累计金额和次数，键是姓名。",
+      "code_mapping": {
+        "file": "taskflow/plugins/report.py",
+        "lines": [
+          18,
+          19
+        ]
+      }
+    },
+    {
+      "id": 24,
+      "type": "normal",
+      "name": "逐行累计",
+      "description": "遍历每一行，把金额加到对应姓名，把次数加一；同名记录会合并。",
+      "code_mapping": {
+        "file": "taskflow/plugins/report.py",
+        "lines": [
+          "20-23"
+        ]
+      }
+    },
+    {
+      "id": 25,
+      "type": "normal",
+      "name": "按金额和姓名排序",
+      "description": "先按金额从高到低，金额相同再按姓名升序，得到稳定的排行榜。",
+      "code_mapping": {
+        "file": "taskflow/plugins/report.py",
+        "lines": [
+          24
+        ]
+      }
+    },
+    {
+      "id": 26,
+      "type": "normal",
+      "name": "返回汇总结果",
+      "description": "总额保留两位小数，人数是去重后的姓名数，排行榜保留每个人的金额和次数。",
+      "code_mapping": {
+        "file": "taskflow/plugins/report.py",
+        "lines": [
+          "25-32"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 27,
+      "type": "normal",
+      "name": "附：任务成功订阅者",
+      "description": "订阅任务成功事件；如果合并输出里有总额，就记录一条汇总日志。",
+      "code_mapping": {
+        "file": "taskflow/plugins/report.py",
+        "lines": [
+          "35-39"
+        ]
+      },
+      "next": null
+    }
+  ]
+}

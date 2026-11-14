@@ -1,0 +1,478 @@
+{
+  "view": {
+    "id": "fn-load-settings",
+    "name": "配置从哪来：默认值、文件、环境变量",
+    "description": "这一章回答“配置是怎么拼出来的”：load_settings 按默认值、配置文件、环境变量的顺序合并，validate_settings 检查安全范围，最后 _coerce 负责把字符串转成正确的类型。读的时候可以分成三节。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        51,
+        52,
+        53,
+        54,
+        60,
+        61,
+        64,
+        65,
+        66,
+        67,
+        74,
+        75
+      ]
+    },
+    {
+      "id": "c54-0",
+      "kind": "branch",
+      "parent": 54,
+      "blocks": [
+        55,
+        56
+      ],
+      "condition": "给了配置文件路径"
+    },
+    {
+      "id": "c56-0",
+      "kind": "branch",
+      "parent": 56,
+      "blocks": [
+        57
+      ],
+      "condition": "内容不是对象"
+    },
+    {
+      "id": "c56-1",
+      "kind": "branch",
+      "parent": 56,
+      "blocks": [
+        58
+      ],
+      "condition": "内容是对象"
+    },
+    {
+      "id": "c54-1",
+      "kind": "branch",
+      "parent": 54,
+      "blocks": [
+        59
+      ],
+      "condition": "没有给配置文件路径"
+    },
+    {
+      "id": "c61-0",
+      "kind": "branch",
+      "parent": 61,
+      "blocks": [
+        62
+      ],
+      "condition": "存在未知配置项"
+    },
+    {
+      "id": "c61-1",
+      "kind": "branch",
+      "parent": 61,
+      "blocks": [
+        63
+      ],
+      "condition": "没有未知配置项"
+    },
+    {
+      "id": "c67-0",
+      "kind": "branch",
+      "parent": 67,
+      "blocks": [
+        68
+      ],
+      "condition": "端口越界"
+    },
+    {
+      "id": "c67-1",
+      "kind": "branch",
+      "parent": 67,
+      "blocks": [
+        69
+      ],
+      "condition": "worker 数小于 1"
+    },
+    {
+      "id": "c67-2",
+      "kind": "branch",
+      "parent": 67,
+      "blocks": [
+        70
+      ],
+      "condition": "租约或轮询间隔不为正"
+    },
+    {
+      "id": "c67-3",
+      "kind": "branch",
+      "parent": 67,
+      "blocks": [
+        71
+      ],
+      "condition": "调度间隔或保留期非法"
+    },
+    {
+      "id": "c67-4",
+      "kind": "branch",
+      "parent": 67,
+      "blocks": [
+        72
+      ],
+      "condition": "日志级别未知"
+    },
+    {
+      "id": "c67-5",
+      "kind": "branch",
+      "parent": 67,
+      "blocks": [
+        73
+      ],
+      "condition": "全部合法"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 51,
+      "type": "normal",
+      "name": "第一节：合并配置",
+      "description": "load_settings 的目标是得到一个完整的配置对象；优先级从低到高是默认值、文件、环境变量、命令行覆盖。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          55,
+          56,
+          57
+        ]
+      },
+      "jump": {
+        "id": 5,
+        "view": "mod-config"
+      }
+    },
+    {
+      "id": 52,
+      "type": "normal",
+      "name": "确定环境变量来源",
+      "description": "默认读进程环境；单独抽出来是为了测试时可以注入一份假环境。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          58
+        ]
+      }
+    },
+    {
+      "id": 53,
+      "type": "normal",
+      "name": "先建一张取值表",
+      "description": "后面每一层配置都写进同一张表，后写的覆盖先写的。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          59
+        ]
+      }
+    },
+    {
+      "id": 54,
+      "type": "branch",
+      "name": "用户给了配置文件吗？",
+      "description": "给了路径就读取文件；没给就跳过文件层，只使用默认值和环境变量。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          60
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c54-0",
+        "c54-1"
+      ]
+    },
+    {
+      "id": 55,
+      "type": "normal",
+      "name": "读取配置文件",
+      "description": "展开 ~，确认文件存在，再按 UTF-8 解析 JSON；文件不存在或格式错误都会直接报错。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          "61-64"
+        ]
+      }
+    },
+    {
+      "id": 56,
+      "type": "branch",
+      "name": "文件内容是对象吗？",
+      "description": "配置必须是键值对象；数组或标量无法对应到字段。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          65
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c56-0",
+        "c56-1"
+      ]
+    },
+    {
+      "id": 57,
+      "type": "normal",
+      "name": "不是对象：报错",
+      "description": "提示配置文件必须是 JSON 对象，避免后续取值时出现莫名其妙的错误。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          66
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 58,
+      "type": "normal",
+      "name": "合并文件配置",
+      "description": "把文件里的键写进取值表；值为空的项视为没写，不覆盖默认值。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          67
+        ]
+      }
+    },
+    {
+      "id": 59,
+      "type": "normal",
+      "name": "跳过文件层",
+      "description": "没有配置文件时，配置完全来自默认值和环境变量。"
+    },
+    {
+      "id": 60,
+      "type": "normal",
+      "name": "环境变量覆盖",
+      "description": "按字段名读取 TASKFLOW_ 前缀的环境变量；环境变量的优先级高于文件。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          "68-72"
+        ]
+      }
+    },
+    {
+      "id": 61,
+      "type": "branch",
+      "name": "有拼错的配置项吗？",
+      "description": "文件里出现配置对象不认识的键，说明拼写错误或版本不匹配；这里选择直接报错，而不是静默忽略。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          73,
+          74
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c61-0",
+        "c61-1"
+      ]
+    },
+    {
+      "id": 62,
+      "type": "normal",
+      "name": "未知项：报错并列出",
+      "description": "把所有不认识的键一起告诉用户，方便一次改完。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          75
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 63,
+      "type": "normal",
+      "name": "全部认识：继续转换",
+      "description": "键都能对上字段，接下来按字段类型转换。"
+    },
+    {
+      "id": 64,
+      "type": "normal",
+      "name": "按默认值的类型转换",
+      "description": "配置文件和环境变量里的值都是字符串或原始 JSON；这里根据默认值的类型，把布尔、整数、浮点、路径和字符串分别转好。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          76,
+          77
+        ]
+      },
+      "jump": {
+        "id": 75
+      }
+    },
+    {
+      "id": 65,
+      "type": "normal",
+      "name": "合并完成，交给校验",
+      "description": "用转换后的值替换默认值，得到一个候选配置；它还要经过安全检查才能使用。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          78
+        ]
+      },
+      "next": 66
+    },
+    {
+      "id": 66,
+      "type": "normal",
+      "name": "第二节：校验配置",
+      "description": "校验函数不改变配置的形状，只检查每个值是否在安全范围内；不合法就抛出带原因的错误。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          38,
+          39
+        ]
+      }
+    },
+    {
+      "id": 67,
+      "type": "branch",
+      "name": "逐项检查安全范围",
+      "description": "端口、worker 数、租约和轮询间隔、调度间隔和保留期、日志级别，每一项都有自己的约束。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          40,
+          42,
+          44,
+          46,
+          49
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c67-0",
+        "c67-1",
+        "c67-2",
+        "c67-3",
+        "c67-4",
+        "c67-5"
+      ]
+    },
+    {
+      "id": 68,
+      "type": "normal",
+      "name": "端口不合法：报错",
+      "description": "端口必须在 1 到 65535 之间，否则服务无法监听。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          41
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 69,
+      "type": "normal",
+      "name": "worker 数不合法：报错",
+      "description": "至少需要一个 worker，否则任务永远不会被领取。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          43
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 70,
+      "type": "normal",
+      "name": "间隔不合法：报错",
+      "description": "租约和轮询间隔必须大于 0；否则续租和等待都会失去意义。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          45
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 71,
+      "type": "normal",
+      "name": "调度参数不合法：报错",
+      "description": "调度间隔必须大于 0，历史保留期不能为负。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          47
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 72,
+      "type": "normal",
+      "name": "日志级别不合法：报错",
+      "description": "只接受 DEBUG、INFO、WARNING、ERROR 这些已知级别。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          50
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 73,
+      "type": "normal",
+      "name": "全部合法：做最后规范化",
+      "description": "日志级别转成大写，空令牌转成“没有令牌”，让后续代码不用再判断。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          48,
+          51
+        ]
+      }
+    },
+    {
+      "id": 74,
+      "type": "normal",
+      "name": "校验完成",
+      "description": "返回一个规范化后的配置副本；原配置不变。下一节看类型转换助手。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          52
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 75,
+      "type": "normal",
+      "name": "第三节：类型转换助手",
+      "description": "它根据默认值的类型选择转换方式；例如默认值是布尔就把字符串转成布尔，默认值是路径就展开路径。",
+      "code_mapping": {
+        "file": "taskflow/config.py",
+        "lines": [
+          "26-35"
+        ]
+      },
+      "next": null
+    }
+  ]
+}

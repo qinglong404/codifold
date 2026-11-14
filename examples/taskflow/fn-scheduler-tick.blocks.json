@@ -1,0 +1,389 @@
+{
+  "view": {
+    "id": "fn-scheduler-tick",
+    "name": "调度维护：一轮 tick 做三件事",
+    "description": "这一章看调度器每一轮维护：先把过期任务放回队列，再把尝试耗尽的任务标为失败，最后清理过期的已完成任务，并按结果发布事件。每件事后面都跟着它的存储实现，读的时候可以当成三段。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        47,
+        50,
+        53
+      ]
+    },
+    {
+      "id": "c44-0",
+      "kind": "branch",
+      "parent": 44,
+      "blocks": [
+        45
+      ],
+      "condition": "有任务被重置"
+    },
+    {
+      "id": "c44-1",
+      "kind": "branch",
+      "parent": 44,
+      "blocks": [
+        46
+      ],
+      "condition": "没有任务被重置"
+    },
+    {
+      "id": "c47-0",
+      "kind": "branch",
+      "parent": 47,
+      "blocks": [
+        48
+      ],
+      "condition": "有任务被标记失败"
+    },
+    {
+      "id": "c47-1",
+      "kind": "branch",
+      "parent": 47,
+      "blocks": [
+        49
+      ],
+      "condition": "没有任务被标记失败"
+    },
+    {
+      "id": "c50-0",
+      "kind": "branch",
+      "parent": 50,
+      "blocks": [
+        51
+      ],
+      "condition": "有任务被清理"
+    },
+    {
+      "id": "c50-1",
+      "kind": "branch",
+      "parent": 50,
+      "blocks": [
+        52
+      ],
+      "condition": "没有任务被清理"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 29,
+      "type": "normal",
+      "name": "tick 接手",
+      "description": "调度器每隔一段时间调用一次维护函数；这一轮要处理三类历史任务。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          125
+        ]
+      }
+    },
+    {
+      "id": 30,
+      "type": "normal",
+      "name": "第一件事：重置过期任务",
+      "description": "调用重置函数，把租约过期但还有尝试机会的任务放回队列；实现紧接着看。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          126
+        ]
+      },
+      "next": 31
+    },
+    {
+      "id": 31,
+      "type": "normal",
+      "name": "重置：找过期任务",
+      "description": "只找状态为运行中、租约已过期、尝试次数还没用完的任务。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "238-240"
+        ]
+      }
+    },
+    {
+      "id": 32,
+      "type": "normal",
+      "name": "筛出还能重试的任务",
+      "description": "尝试次数已经用完的不在这里处理，留给下一件事标记失败。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "241-245"
+        ]
+      }
+    },
+    {
+      "id": 33,
+      "type": "normal",
+      "name": "批量改回排队中",
+      "description": "清空 worker 和租约，让任务重新可被领取。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "246-252"
+        ]
+      }
+    },
+    {
+      "id": 34,
+      "type": "normal",
+      "name": "返回被重置的任务 id",
+      "description": "拿到 id 列表后回到维护流程，继续处理耗尽任务。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          253
+        ]
+      },
+      "next": 35
+    },
+    {
+      "id": 35,
+      "type": "normal",
+      "name": "第二件事：标记耗尽任务",
+      "description": "调用耗尽处理函数，把租约过期且尝试次数用完的任务标为失败；实现紧接着看。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          127
+        ]
+      },
+      "next": 36
+    },
+    {
+      "id": 36,
+      "type": "normal",
+      "name": "耗尽处理：找耗尽任务",
+      "description": "条件与上一段相反：状态运行中、租约过期，但尝试次数已经达到上限。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "255-257"
+        ]
+      }
+    },
+    {
+      "id": 37,
+      "type": "normal",
+      "name": "筛出尝试耗尽的任务",
+      "description": "保留尝试次数，写入错误说明时要用。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "258-263"
+        ]
+      }
+    },
+    {
+      "id": 38,
+      "type": "normal",
+      "name": "批量标记失败",
+      "description": "写入一条“租约过期且尝试次数耗尽”的错误说明。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "264-272"
+        ]
+      }
+    },
+    {
+      "id": 39,
+      "type": "normal",
+      "name": "返回失败的任务 id",
+      "description": "拿到 id 列表后回到维护流程，继续清理历史。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          273
+        ]
+      },
+      "next": 40
+    },
+    {
+      "id": 40,
+      "type": "normal",
+      "name": "第三件事：清理历史",
+      "description": "调用清理函数，删除超过保留期的已完成任务；实现紧接着看。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          128
+        ]
+      },
+      "next": 41
+    },
+    {
+      "id": 41,
+      "type": "normal",
+      "name": "清理：计算截止时间",
+      "description": "用当前时间减去保留期，得到可删除的最晚完成时间。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "275-277"
+        ]
+      }
+    },
+    {
+      "id": 42,
+      "type": "normal",
+      "name": "删除过期已完成任务",
+      "description": "只删成功和已取消的任务；运行中和排队中的任务不会被清理。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "278-282"
+        ]
+      }
+    },
+    {
+      "id": 43,
+      "type": "normal",
+      "name": "返回删除数量",
+      "description": "拿到数量后回到维护流程，开始发布事件。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          283
+        ]
+      },
+      "next": 44
+    },
+    {
+      "id": 44,
+      "type": "branch",
+      "name": "有任务被重置吗？",
+      "description": "只有实际发生重置才发布事件，避免每轮都产生空通知。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          129
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c44-0",
+        "c44-1"
+      ]
+    },
+    {
+      "id": 45,
+      "type": "normal",
+      "name": "发布 scheduler.requeued",
+      "description": "带上被重置的任务 id 列表。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          130
+        ]
+      }
+    },
+    {
+      "id": 46,
+      "type": "normal",
+      "name": "没有：跳过",
+      "description": "本轮没有过期任务，不发布事件。"
+    },
+    {
+      "id": 47,
+      "type": "branch",
+      "name": "有任务被标记失败吗？",
+      "description": "同样只在有结果时发布。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          131
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c47-0",
+        "c47-1"
+      ]
+    },
+    {
+      "id": 48,
+      "type": "normal",
+      "name": "发布 scheduler.failed",
+      "description": "带上失败的任务 id 列表。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          132
+        ]
+      }
+    },
+    {
+      "id": 49,
+      "type": "normal",
+      "name": "没有：跳过",
+      "description": "本轮没有耗尽任务。"
+    },
+    {
+      "id": 50,
+      "type": "branch",
+      "name": "有任务被清理吗？",
+      "description": "清理数量大于零才值得通知。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          133
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c50-0",
+        "c50-1"
+      ]
+    },
+    {
+      "id": 51,
+      "type": "normal",
+      "name": "发布 scheduler.pruned",
+      "description": "带上删除数量。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          134
+        ]
+      }
+    },
+    {
+      "id": 52,
+      "type": "normal",
+      "name": "没有：跳过",
+      "description": "本轮没有可清理记录。"
+    },
+    {
+      "id": 53,
+      "type": "normal",
+      "name": "本轮结束",
+      "description": "维护函数返回，调度器等待下一个间隔。",
+      "next": null
+    }
+  ]
+}

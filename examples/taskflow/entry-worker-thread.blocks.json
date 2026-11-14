@@ -1,0 +1,111 @@
+{
+  "view": {
+    "id": "entry-worker-thread",
+    "name": "worker 线程内部：领取、处理、再领取",
+    "description": "这一章进入一个 worker 线程的内部循环：它如何判断该不该停、领到任务后做什么、没领到任务时如何等待。",
+    "kind": "entry"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        11,
+        12,
+        13
+      ]
+    },
+    {
+      "id": "c13-0",
+      "kind": "branch",
+      "parent": 13,
+      "blocks": [
+        14
+      ],
+      "condition": "还没收到停止信号"
+    },
+    {
+      "id": "c13-1",
+      "kind": "branch",
+      "parent": 13,
+      "blocks": [
+        15
+      ],
+      "condition": "已经收到停止信号"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 11,
+      "type": "normal",
+      "name": "线程开始运行",
+      "description": "worker 线程启动后进入自己的运行入口；从这里开始，它和主线程并行工作。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          49
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "type": "normal",
+      "name": "记录启动日志",
+      "description": "先打印自己的名字，方便在日志里区分多个 worker。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          50
+        ]
+      }
+    },
+    {
+      "id": 13,
+      "type": "branch",
+      "name": "收到停止信号了吗？",
+      "description": "每轮循环先检查共享停止开关；一旦置位，就不再领取新任务。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          51
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c13-0",
+        "c13-1"
+      ]
+    },
+    {
+      "id": 14,
+      "type": "normal",
+      "name": "领取并处理一条任务",
+      "description": "调用一次单任务处理：领到就执行，没领到就按轮询间隔等待一会儿，然后回到循环头。任务处理的细节见 fn-worker-process。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          52,
+          53
+        ]
+      },
+      "jump": {
+        "id": 29,
+        "view": "fn-worker-process"
+      },
+      "next": 13
+    },
+    {
+      "id": 15,
+      "type": "normal",
+      "name": "记录停止日志并结束",
+      "description": "打印停止日志后线程退出，不再接触存储。",
+      "code_mapping": {
+        "file": "taskflow/worker.py",
+        "lines": [
+          54
+        ]
+      },
+      "next": null
+    }
+  ]
+}

@@ -1,0 +1,248 @@
+{
+  "view": {
+    "id": "main",
+    "name": "主线：一次启动发生了什么",
+    "description": "这一章跟着一次真实的启动往下走：先看程序怎样从两个启动入口进入命令行主函数，再看它如何解析参数、合并配置、决定是否继续，最后按子命令分流到五个运行入口。后面的章节分别展开每一条支路。",
+    "kind": "main"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        73,
+        74
+      ]
+    },
+    {
+      "id": "c70-0",
+      "kind": "branch",
+      "parent": 70,
+      "blocks": [
+        71
+      ],
+      "condition": "配置不合法"
+    },
+    {
+      "id": "c70-1",
+      "kind": "branch",
+      "parent": 70,
+      "blocks": [
+        72
+      ],
+      "condition": "配置合法"
+    },
+    {
+      "id": "c74-0",
+      "kind": "branch",
+      "parent": 74,
+      "blocks": [
+        75
+      ],
+      "condition": "用户选择 serve"
+    },
+    {
+      "id": "c74-1",
+      "kind": "branch",
+      "parent": 74,
+      "blocks": [
+        76
+      ],
+      "condition": "用户选择 worker"
+    },
+    {
+      "id": "c74-2",
+      "kind": "branch",
+      "parent": 74,
+      "blocks": [
+        77
+      ],
+      "condition": "用户选择 enqueue"
+    },
+    {
+      "id": "c74-3",
+      "kind": "branch",
+      "parent": 74,
+      "blocks": [
+        78
+      ],
+      "condition": "用户选择 status"
+    },
+    {
+      "id": "c74-4",
+      "kind": "branch",
+      "parent": 74,
+      "blocks": [
+        79
+      ],
+      "condition": "用户选择 run-once"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 65,
+      "type": "normal",
+      "name": "从 run.py 启动",
+      "description": "最常见的启动方式：直接执行 run.py。它把命令行主函数的返回值原样交给操作系统，作为进程退出码。",
+      "code_mapping": {
+        "file": "run.py",
+        "lines": [
+          5,
+          6
+        ]
+      }
+    },
+    {
+      "id": 66,
+      "type": "normal",
+      "name": "另一条启动路径：模块方式",
+      "description": "另一种等价方式是 python -m taskflow。它和上一块不是先后关系，而是二选一；两条路最终都汇合到同一个命令行主函数。",
+      "flow": {
+        "id": 5,
+        "view": "entry-module"
+      }
+    },
+    {
+      "id": 67,
+      "type": "normal",
+      "name": "汇合到命令行主函数",
+      "description": "从这里开始只剩一条路：命令行主函数接管，负责解析参数、准备配置、初始化日志，并把异常翻译成退出码。它的内部展开在 fn-cli-main。",
+      "jump": {
+        "id": 29,
+        "view": "fn-cli-main"
+      }
+    },
+    {
+      "id": 68,
+      "type": "normal",
+      "name": "先让解析器读懂命令",
+      "description": "主函数先构建解析器，注册五个子命令和全局参数，再把用户输入解析成结构化参数。具体注册了哪些参数，见 fn-cli-wiring。",
+      "jump": {
+        "id": 1,
+        "view": "fn-cli-wiring"
+      }
+    },
+    {
+      "id": 69,
+      "type": "normal",
+      "name": "再把命令行覆盖合并进配置",
+      "description": "解析结果不会直接使用，而是叠加到配置文件和环境变量之上；命令行显式给出的值优先级最高。合并与校验的细节见 fn-cli-wiring 和 fn-load-settings。",
+      "jump": {
+        "id": 9,
+        "view": "fn-cli-wiring"
+      }
+    },
+    {
+      "id": 70,
+      "type": "branch",
+      "name": "配置合法吗？",
+      "description": "端口、worker 数量、轮询和租约间隔、日志级别都有安全范围。这里做最后一道检查，任何一项越界都不会放行。",
+      "select": "single",
+      "branches": [
+        "c70-0",
+        "c70-1"
+      ]
+    },
+    {
+      "id": 71,
+      "type": "normal",
+      "name": "不合法：打印原因并退出 2",
+      "description": "配置错误属于用户输入问题，程序把原因写到标准错误后直接结束，不会进入命令分发。",
+      "next": null
+    },
+    {
+      "id": 72,
+      "type": "normal",
+      "name": "合法：继续初始化",
+      "description": "配置通过后，程序才有条件启动后面的子命令。",
+      "next": 73
+    },
+    {
+      "id": 73,
+      "type": "normal",
+      "name": "按配置初始化日志",
+      "description": "日志级别来自刚校验过的配置；之后所有模块都用同一套格式输出时间、级别、模块名和消息。"
+    },
+    {
+      "id": 74,
+      "type": "branch",
+      "name": "按命令表分流",
+      "description": "命令表把 serve、worker、enqueue、status、run-once 分别映射到五个处理函数。用户输入了哪个子命令，就从对应分支继续；五条支路各自展开成后面的入口章节。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          "191-197"
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c74-0",
+        "c74-1",
+        "c74-2",
+        "c74-3",
+        "c74-4"
+      ]
+    },
+    {
+      "id": 75,
+      "type": "normal",
+      "name": "serve：启动完整服务",
+      "description": "这条支路会同时启动 HTTP、worker 和调度器，适合常驻运行；完整过程见 entry-serve。",
+      "flow": {
+        "id": 31,
+        "view": "entry-serve"
+      },
+      "next": null
+    },
+    {
+      "id": 76,
+      "type": "normal",
+      "name": "worker：只启动 worker",
+      "description": "只启动后台 worker，不提供 HTTP，也不跑调度器；见 entry-worker。",
+      "flow": {
+        "id": 21,
+        "view": "entry-worker"
+      },
+      "next": null
+    },
+    {
+      "id": 77,
+      "type": "normal",
+      "name": "enqueue：写入一条任务",
+      "description": "创建一条任务后立刻退出，适合脚本或定时任务调用；见 entry-enqueue。",
+      "flow": {
+        "id": 37,
+        "view": "entry-enqueue"
+      },
+      "next": null
+    },
+    {
+      "id": 78,
+      "type": "normal",
+      "name": "status：查询任务",
+      "description": "只读查询单条任务或任务列表，不修改任何数据；见 entry-status。",
+      "flow": {
+        "id": 27,
+        "view": "entry-status"
+      },
+      "next": null
+    },
+    {
+      "id": 79,
+      "type": "normal",
+      "name": "run-once：领取并执行一条",
+      "description": "启动一个 worker，领取并执行一条任务后关闭，适合调试或一次性消费；见 entry-run-once。",
+      "flow": {
+        "id": 17,
+        "view": "entry-run-once"
+      },
+      "next": null
+    }
+  ]
+}

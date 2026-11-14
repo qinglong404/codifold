@@ -1,0 +1,364 @@
+{
+  "view": {
+    "id": "fn-api-create-job",
+    "name": "创建任务接口：校验、写入、发布",
+    "description": "这一章展开 POST /api/jobs 的处理函数：它按顺序校验任务类型、任务内容和最大尝试次数，全部通过后才写库，最后发布创建事件并返回 201。末尾附上请求体解析的实现。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        41,
+        42,
+        43,
+        46,
+        49,
+        50,
+        53,
+        54,
+        57,
+        58,
+        59,
+        60
+      ]
+    },
+    {
+      "id": "c43-0",
+      "kind": "branch",
+      "parent": 43,
+      "blocks": [
+        44
+      ],
+      "condition": "类型不合法"
+    },
+    {
+      "id": "c43-1",
+      "kind": "branch",
+      "parent": 43,
+      "blocks": [
+        45
+      ],
+      "condition": "类型合法"
+    },
+    {
+      "id": "c46-0",
+      "kind": "branch",
+      "parent": 46,
+      "blocks": [
+        47
+      ],
+      "role": "body"
+    },
+    {
+      "id": "c46-1",
+      "kind": "branch",
+      "parent": 46,
+      "blocks": [
+        48
+      ],
+      "condition": "任务类型未登记",
+      "role": "except"
+    },
+    {
+      "id": "c50-0",
+      "kind": "branch",
+      "parent": 50,
+      "blocks": [
+        51
+      ],
+      "condition": "内容不是对象"
+    },
+    {
+      "id": "c50-1",
+      "kind": "branch",
+      "parent": 50,
+      "blocks": [
+        52
+      ],
+      "condition": "内容是对象"
+    },
+    {
+      "id": "c54-0",
+      "kind": "branch",
+      "parent": 54,
+      "blocks": [
+        55
+      ],
+      "condition": "不是整数或布尔"
+    },
+    {
+      "id": "c54-1",
+      "kind": "branch",
+      "parent": 54,
+      "blocks": [
+        56
+      ],
+      "condition": "是合法整数"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 41,
+      "type": "normal",
+      "name": "接口接手",
+      "description": "请求已经通过分发层；进入函数后先把请求体解析成对象（实现见本视图末尾），再逐项校验，最后把一次创建请求变成数据库里的一条任务。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "126-128"
+        ]
+      },
+      "jump": {
+        "id": 60
+      }
+    },
+    {
+      "id": 42,
+      "type": "normal",
+      "name": "先读任务类型",
+      "description": "任务类型决定后面用哪条流水线，所以第一个检查它。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          129
+        ]
+      }
+    },
+    {
+      "id": 43,
+      "type": "branch",
+      "name": "类型是非空字符串吗？",
+      "description": "空字符串、纯空白或非字符串都不行；没有类型就无法选择步骤。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          130
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c43-0",
+        "c43-1"
+      ]
+    },
+    {
+      "id": 44,
+      "type": "normal",
+      "name": "不是：拒绝请求",
+      "description": "抛出参数错误，分发层会把它转成 400。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          131
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 45,
+      "type": "normal",
+      "name": "是：继续检查计划",
+      "description": "类型格式没问题，接下来确认它是否真的在计划表里。"
+    },
+    {
+      "id": 46,
+      "type": "branch",
+      "name": "这个类型有对应计划吗？",
+      "description": "只有计划表里登记过的类型才能执行；否则任务创建出来也无法运行。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          132
+        ]
+      },
+      "kind": "try",
+      "select": "single",
+      "branches": [
+        "c46-0",
+        "c46-1"
+      ]
+    },
+    {
+      "id": 47,
+      "type": "normal",
+      "name": "查询计划表",
+      "description": "按任务类型查步骤序列；查不到会报告未知类型。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          133
+        ]
+      },
+      "jump": {
+        "id": 72,
+        "view": "fn-pipeline"
+      }
+    },
+    {
+      "id": 48,
+      "type": "normal",
+      "name": "未登记：转成参数错误",
+      "description": "把未知类型包装成参数错误，让客户端看到 400，而不是 500。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          134,
+          135
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 49,
+      "type": "normal",
+      "name": "再读任务内容",
+      "description": "任务内容可以省略；省略时按空对象处理。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          136
+        ]
+      }
+    },
+    {
+      "id": 50,
+      "type": "branch",
+      "name": "任务内容是对象吗？",
+      "description": "数组和标量不能作为步骤输入；这里只接受键值对象。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          137
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c50-0",
+        "c50-1"
+      ]
+    },
+    {
+      "id": 51,
+      "type": "normal",
+      "name": "不是：拒绝请求",
+      "description": "提示任务内容必须是 JSON 对象。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          138
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 52,
+      "type": "normal",
+      "name": "是：继续读尝试次数",
+      "description": "任务内容有效，最后检查重试上限。"
+    },
+    {
+      "id": 53,
+      "type": "normal",
+      "name": "读最大尝试次数",
+      "description": "不写时默认 3 次；它决定租约过期后最多能被重新领取几次。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          139
+        ]
+      }
+    },
+    {
+      "id": 54,
+      "type": "branch",
+      "name": "是整数且不是布尔吗？",
+      "description": "布尔值在 Python 里也是整数，必须单独排除；小数和字符串同样不接受。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          140
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c54-0",
+        "c54-1"
+      ]
+    },
+    {
+      "id": 55,
+      "type": "normal",
+      "name": "不是：拒绝请求",
+      "description": "提示最大尝试次数必须是整数。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          141
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 56,
+      "type": "normal",
+      "name": "是：进入创建",
+      "description": "三个参数都通过校验，可以写库了。"
+    },
+    {
+      "id": 57,
+      "type": "normal",
+      "name": "写入新任务",
+      "description": "存储会把任务内容序列化成 JSON，以排队状态插入，并读回完整记录；细节见 fn-storage。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          142
+        ]
+      },
+      "jump": {
+        "id": 5,
+        "view": "fn-storage"
+      }
+    },
+    {
+      "id": 58,
+      "type": "normal",
+      "name": "发布 job.created",
+      "description": "通知事件总线有新任务；订阅者可以据此做后续处理。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          143
+        ]
+      }
+    },
+    {
+      "id": 59,
+      "type": "normal",
+      "name": "返回 201 和新任务",
+      "description": "把任务序列化后返回，客户端拿到任务 id 就可以查询进度。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          144
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 60,
+      "type": "normal",
+      "name": "附：请求体如何解析",
+      "description": "请求体为空时返回空对象；JSON 非法或顶层不是对象时抛出参数错误，由接口层转成 400。",
+      "code_mapping": {
+        "file": "taskflow/api.py",
+        "lines": [
+          "31-40"
+        ]
+      },
+      "next": null
+    }
+  ]
+}

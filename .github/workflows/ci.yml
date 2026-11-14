@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: 单元测试
+        run: python -B -m unittest discover -s tests -q
+      - name: 示例工作区门禁
+        run: |
+          python -m codifold.workbench check examples/gradebook-chain --strict
+          python -m codifold.workbench check examples/taskflow --strict
+      - name: 安装与命令行冒烟
+        run: |
+          pip install -e .
+          codifold brief examples/gradebook --view gradebook
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 前端构建
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build

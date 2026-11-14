@@ -1,0 +1,80 @@
+{
+  "view": {
+    "id": "fn-load",
+    "name": "读取学生数据",
+    "description": "load_students：文件不存在时返回空列表。"
+  },
+  "blocks": [
+    {
+      "id": 1,
+      "type": "normal",
+      "name": "函数入口",
+      "description": "无参数；返回学生列表，文件不存在时为空列表。",
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          "12-13"
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "type": "branch",
+      "select": "single",
+      "name": "文件是否存在",
+      "description": "DATA_FILE 指向 students.json；不存在就返回空列表。定义见 struct 的“数据文件路径”。",
+      "branches": [
+        {
+          "condition": "不存在",
+          "steps": [
+            {
+              "id": 3,
+              "type": "normal",
+              "name": "返回空列表",
+              "description": "不读取文件。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  15
+                ]
+              },
+              "next": null
+            }
+          ]
+        },
+        {
+          "condition": "存在",
+          "steps": [
+            {
+              "id": 4,
+              "type": "normal",
+              "name": "读取并解析",
+              "description": "按 UTF-8 解析 JSON；DATA_FILE 定义见 struct 的“数据文件路径”。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  16
+                ]
+              },
+              "next": null,
+              "jump": {
+                "view": "struct",
+                "id": 2
+              }
+            }
+          ]
+        }
+      ],
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          14
+        ]
+      },
+      "jump": {
+        "view": "struct",
+        "id": 2
+      }
+    }
+  ]
+}

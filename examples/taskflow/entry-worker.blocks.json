@@ -1,0 +1,193 @@
+{
+  "view": {
+    "id": "entry-worker",
+    "name": "worker 子命令：只跑后台线程",
+    "description": "这一章看只启动后台线程的 worker 模式：它复用同一套运行时组装，只保留 worker 线程和存储，等待停止信号后统一关闭。",
+    "kind": "entry"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        30
+      ]
+    },
+    {
+      "id": "c27-0",
+      "kind": "branch",
+      "parent": 27,
+      "blocks": [
+        28
+      ],
+      "role": "body"
+    },
+    {
+      "id": "f27",
+      "kind": "finally",
+      "parent": 27,
+      "blocks": [
+        29
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "id": 21,
+      "type": "normal",
+      "name": "worker 入口",
+      "description": "用户执行 taskflow worker 时进入这里；此时配置已经校验、参数已经解析。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          121
+        ]
+      }
+    },
+    {
+      "id": 22,
+      "type": "normal",
+      "name": "创建共享停止事件",
+      "description": "先准备一个停止开关，所有 worker 线程和主线程都盯着它；任何一方收到退出信号，其他线程都能看到。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          122
+        ]
+      }
+    },
+    {
+      "id": 23,
+      "type": "normal",
+      "name": "安装信号处理",
+      "description": "主线程把 Ctrl-C 和 SIGTERM 接到停止开关上，避免用户中断时留下后台线程。具体实现见 fn-runtime-control。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          123
+        ]
+      },
+      "jump": {
+        "id": 40,
+        "view": "fn-runtime-control"
+      }
+    },
+    {
+      "id": 24,
+      "type": "normal",
+      "name": "组装精简运行时",
+      "description": "和 serve 不同，这里不创建 HTTP 服务和调度器，只准备存储、事件总线、流水线和指定数量的 worker。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          124,
+          125
+        ]
+      },
+      "jump": {
+        "id": 15,
+        "view": "fn-cli-wiring"
+      }
+    },
+    {
+      "id": 25,
+      "type": "normal",
+      "name": "启动 worker 线程",
+      "description": "worker 线程启动后立刻开始领取任务；每个线程内部的循环见 entry-worker-thread。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          126,
+          127
+        ]
+      },
+      "flow": {
+        "id": 11,
+        "view": "entry-worker-thread"
+      }
+    },
+    {
+      "id": 26,
+      "type": "normal",
+      "name": "记录启动数量",
+      "description": "打印实际启动了几个 worker，方便确认配置是否生效。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          128
+        ]
+      }
+    },
+    {
+      "id": 27,
+      "type": "branch",
+      "name": "等待停止并关闭",
+      "description": "主线程在这里阻塞，直到停止开关被置位；无论正常退出还是异常，都会走统一的关闭流程。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          129,
+          131
+        ]
+      },
+      "kind": "try",
+      "select": "single",
+      "branches": [
+        "c27-0"
+      ],
+      "finally": "f27"
+    },
+    {
+      "id": 28,
+      "type": "normal",
+      "name": "等待停止信号",
+      "description": "每秒检查一次停止开关，收到信号就离开等待。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          130
+        ]
+      },
+      "jump": {
+        "id": 41,
+        "view": "fn-runtime-control"
+      }
+    },
+    {
+      "id": 29,
+      "type": "normal",
+      "name": "按顺序关闭",
+      "description": "先让 worker 停止并等待它们退出，再关闭存储；顺序反了可能留下仍在写库的线程。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          132
+        ]
+      },
+      "jump": {
+        "id": 42,
+        "view": "fn-runtime-control"
+      }
+    },
+    {
+      "id": 30,
+      "type": "normal",
+      "name": "正常退出",
+      "description": "所有线程和存储都关闭后，worker 子命令返回 0。",
+      "code_mapping": {
+        "file": "taskflow/cli.py",
+        "lines": [
+          133
+        ]
+      },
+      "next": null
+    }
+  ]
+}

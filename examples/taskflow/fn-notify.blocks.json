@@ -1,0 +1,227 @@
+{
+  "view": {
+    "id": "fn-notify",
+    "name": "notify.webhook：把汇总结果发出去",
+    "description": "这一章展开通知步骤：它读取任务内容里的 webhook 地址，校验协议，把上一步的汇总结果发送出去；没有配置地址时跳过，而不是失败。开头是模块声明，末尾附上丢失事件订阅者。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        25,
+        26,
+        27,
+        28,
+        33,
+        34,
+        35,
+        36
+      ]
+    },
+    {
+      "id": "c28-0",
+      "kind": "branch",
+      "parent": 28,
+      "blocks": [
+        29
+      ],
+      "condition": "没有配置地址"
+    },
+    {
+      "id": "c28-1",
+      "kind": "branch",
+      "parent": 28,
+      "blocks": [
+        30
+      ],
+      "condition": "配置了地址"
+    },
+    {
+      "id": "c30-0",
+      "kind": "branch",
+      "parent": 30,
+      "blocks": [
+        31
+      ],
+      "condition": "不是 http(s) 地址"
+    },
+    {
+      "id": "c30-1",
+      "kind": "branch",
+      "parent": 30,
+      "blocks": [
+        32
+      ],
+      "condition": "是 http(s) 地址"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 25,
+      "type": "normal",
+      "name": "开头：插件模块声明",
+      "description": "模块使用标准库的 urllib 发请求，并声明了日志器。",
+      "code_mapping": {
+        "file": "taskflow/plugins/notify.py",
+        "lines": [
+          1,
+          2,
+          "4-7",
+          9,
+          11
+        ]
+      }
+    },
+    {
+      "id": 26,
+      "type": "normal",
+      "name": "步骤入口",
+      "description": "这个函数被注册为 notify.webhook，失败后最多重试 2 次，每次等待 0.25 秒。",
+      "code_mapping": {
+        "file": "taskflow/plugins/notify.py",
+        "lines": [
+          14,
+          15
+        ]
+      }
+    },
+    {
+      "id": 27,
+      "type": "normal",
+      "name": "先读 webhook 地址",
+      "description": "地址是可选的；没有地址时这个步骤应该安静跳过。",
+      "code_mapping": {
+        "file": "taskflow/plugins/notify.py",
+        "lines": [
+          16,
+          17
+        ]
+      }
+    },
+    {
+      "id": 28,
+      "type": "branch",
+      "name": "配置了 webhook 吗？",
+      "description": "没有配置就不发请求，也不把任务判为失败。",
+      "code_mapping": {
+        "file": "taskflow/plugins/notify.py",
+        "lines": [
+          18
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c28-0",
+        "c28-1"
+      ]
+    },
+    {
+      "id": 29,
+      "type": "normal",
+      "name": "没有：返回跳过",
+      "description": "结果里写明原因是 webhook 为空，任务仍然算成功。",
+      "code_mapping": {
+        "file": "taskflow/plugins/notify.py",
+        "lines": [
+          19
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 30,
+      "type": "branch",
+      "name": "是 http(s) 地址吗？",
+      "description": "只允许 http 和 https；其他协议不发送。",
+      "code_mapping": {
+        "file": "taskflow/plugins/notify.py",
+        "lines": [
+          20
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c30-0",
+        "c30-1"
+      ]
+    },
+    {
+      "id": 31,
+      "type": "normal",
+      "name": "不是：参数错误",
+      "description": "提示 webhook 必须是 http(s) 地址。",
+      "code_mapping": {
+        "file": "taskflow/plugins/notify.py",
+        "lines": [
+          21
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 32,
+      "type": "normal",
+      "name": "是：读取汇总结果",
+      "description": "从上游输出里取汇总；没有就按空对象处理。",
+      "code_mapping": {
+        "file": "taskflow/plugins/notify.py",
+        "lines": [
+          22
+        ]
+      }
+    },
+    {
+      "id": 33,
+      "type": "normal",
+      "name": "构造请求体",
+      "description": "把任务 id 和汇总结果包成 JSON，按 UTF-8 编码。",
+      "code_mapping": {
+        "file": "taskflow/plugins/notify.py",
+        "lines": [
+          23,
+          24
+        ]
+      }
+    },
+    {
+      "id": 34,
+      "type": "normal",
+      "name": "构造 POST 请求",
+      "description": "设置内容类型为 JSON，并给请求设置 5 秒超时，避免一直挂起。",
+      "code_mapping": {
+        "file": "taskflow/plugins/notify.py",
+        "lines": [
+          "25-28"
+        ]
+      }
+    },
+    {
+      "id": 35,
+      "type": "normal",
+      "name": "发送并返回响应",
+      "description": "读取响应状态码和前 200 字节响应体；更长的内容会被截断，避免日志过大。",
+      "code_mapping": {
+        "file": "taskflow/plugins/notify.py",
+        "lines": [
+          "29-31"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 36,
+      "type": "normal",
+      "name": "附：任务丢失订阅者",
+      "description": "订阅任务丢失事件；任务被别的 worker 接管时，记录任务 id 和原 worker 名。",
+      "code_mapping": {
+        "file": "taskflow/plugins/notify.py",
+        "lines": [
+          "34-37"
+        ]
+      },
+      "next": null
+    }
+  ]
+}

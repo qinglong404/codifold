@@ -1,0 +1,84 @@
+{
+  "view": {
+    "id": "fn-summary",
+    "name": "班级统计",
+    "description": "class_summary：返回人数和平均分。"
+  },
+  "blocks": [
+    {
+      "id": 1,
+      "type": "normal",
+      "name": "函数入口",
+      "description": "入参：学生列表；返回 {count, average}。",
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          "73-74"
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "type": "branch",
+      "select": "single",
+      "name": "列表是否为空",
+      "description": "空列表返回零值。",
+      "branches": [
+        {
+          "condition": "为空",
+          "steps": [
+            {
+              "id": 3,
+              "type": "normal",
+              "name": "返回零值",
+              "description": "人数 0，平均分 0。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  76
+                ]
+              },
+              "next": null
+            }
+          ]
+        },
+        {
+          "condition": "非空",
+          "steps": [
+            {
+              "id": 4,
+              "type": "normal",
+              "name": "计算平均分",
+              "description": "总分除以人数。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  77
+                ]
+              }
+            },
+            {
+              "id": 5,
+              "type": "normal",
+              "name": "返回统计",
+              "description": "四舍五入到 1 位小数。",
+              "code_mapping": {
+                "file": "gradebook.py",
+                "lines": [
+                  78
+                ]
+              },
+              "next": null
+            }
+          ]
+        }
+      ],
+      "code_mapping": {
+        "file": "gradebook.py",
+        "lines": [
+          75
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,160 @@
+{
+  "view": {
+    "id": "fn-storage-claim",
+    "name": "领取、续租与完成：任务所有权的三次写",
+    "description": "这一章展开三个与任务所有权有关的方法：领取函数原子领取，心跳函数延长租约，完成函数写回最终结果。它们共同保证同一条任务不会被两个 worker 同时执行。",
+    "kind": "function"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        25,
+        26,
+        27,
+        30,
+        31,
+        32,
+        33
+      ]
+    },
+    {
+      "id": "c27-0",
+      "kind": "branch",
+      "parent": 27,
+      "blocks": [
+        28
+      ],
+      "condition": "没有可领取任务"
+    },
+    {
+      "id": "c27-1",
+      "kind": "branch",
+      "parent": 27,
+      "blocks": [
+        29
+      ],
+      "condition": "有可领取任务"
+    }
+  ],
+  "blocks": [
+    {
+      "id": 25,
+      "type": "normal",
+      "name": "领取入口",
+      "description": "它在写事务里挑选一条可执行任务；整个挑选和标记过程是原子的。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "177-180"
+        ]
+      }
+    },
+    {
+      "id": 26,
+      "type": "normal",
+      "name": "挑一条能领的任务",
+      "description": "只考虑排队中或租约已过期的任务，且尝试次数还没用完；按创建时间和 id 排序，先到先得。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "181-186"
+        ]
+      }
+    },
+    {
+      "id": 27,
+      "type": "branch",
+      "name": "有可领取的任务吗？",
+      "description": "没有任务时 worker 应该空转等待，而不是报错。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          187
+        ]
+      },
+      "select": "single",
+      "branches": [
+        "c27-0",
+        "c27-1"
+      ]
+    },
+    {
+      "id": 28,
+      "type": "normal",
+      "name": "没有：返回空",
+      "description": "调用方据此按轮询间隔等待。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          188
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 29,
+      "type": "normal",
+      "name": "有：尝试次数加一",
+      "description": "领取即算一次尝试；这样租约过期后重新领取也能累计次数。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          189
+        ]
+      }
+    },
+    {
+      "id": 30,
+      "type": "normal",
+      "name": "标记运行中并写租约",
+      "description": "记录当前 worker 和租约到期时间；其他 worker 在这段时间内不会领到同一条任务。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "190-195"
+        ]
+      }
+    },
+    {
+      "id": 31,
+      "type": "normal",
+      "name": "读回更新后的任务",
+      "description": "返回带最新尝试次数和租约信息的任务；worker 拿到它就可以执行。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "196-199"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 32,
+      "type": "normal",
+      "name": "心跳方法：延长租约",
+      "description": "只有任务仍在运行且 worker 匹配时才更新租约；更新到一行返回真，否则返回假。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "201-209"
+        ]
+      },
+      "next": null
+    },
+    {
+      "id": 33,
+      "type": "normal",
+      "name": "完成方法：写回结果",
+      "description": "只接受成功或失败；写入后清空 worker 和租约，更新到一行才算成功。",
+      "code_mapping": {
+        "file": "taskflow/storage.py",
+        "lines": [
+          "211-225"
+        ]
+      },
+      "next": null
+    }
+  ]
+}

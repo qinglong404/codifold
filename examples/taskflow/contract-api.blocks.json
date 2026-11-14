@@ -1,0 +1,393 @@
+{
+  "view": {
+    "id": "contract-api",
+    "name": "HTTP 接口与 JSON 类型契约",
+    "description": "这一章把 HTTP 接口从流程里抽出来，按表阅读：先看任务记录和请求/响应类型，再看每条路由的方法、路径、鉴权、请求、响应和错误。流程仍在 entry-http 和 fn-api-* 里；这里的来源和处理函数指向那些块。",
+    "kind": "contract"
+  },
+  "containers": [
+    {
+      "id": "root",
+      "kind": "root",
+      "blocks": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "id": 1,
+      "type": "normal",
+      "name": "Job",
+      "description": "任务记录，所有任务接口返回的对象；状态取值来自 JobState。",
+      "contract": {
+        "kind": "type",
+        "fields": [
+          {
+            "name": "id",
+            "type": "int",
+            "required": true,
+            "description": "任务编号，自增主键"
+          },
+          {
+            "name": "kind",
+            "type": "string",
+            "required": true,
+            "description": "任务类型，必须能在流水线计划表里找到"
+          },
+          {
+            "name": "payload",
+            "type": "object",
+            "required": true,
+            "description": "任务内容，必须是 JSON 对象"
+          },
+          {
+            "name": "state",
+            "type": "enum",
+            "values": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "canceled"
+            ],
+            "required": true,
+            "description": "任务状态"
+          },
+          {
+            "name": "attempts",
+            "type": "int",
+            "required": true,
+            "description": "已经尝试的次数"
+          },
+          {
+            "name": "max_attempts",
+            "type": "int",
+            "required": true,
+            "description": "最多尝试次数，创建时默认 3"
+          },
+          {
+            "name": "worker_id",
+            "type": "string | null",
+            "description": "当前持有租约的 worker"
+          },
+          {
+            "name": "lease_until",
+            "type": "number | null",
+            "description": "租约到期时间；未领取时为空"
+          },
+          {
+            "name": "last_error",
+            "type": "string | null",
+            "description": "最近一次失败的说明"
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true,
+            "description": "执行结果；没有结果时为空对象"
+          },
+          {
+            "name": "created_at",
+            "type": "number",
+            "required": true,
+            "description": "创建时间戳"
+          },
+          {
+            "name": "updated_at",
+            "type": "number",
+            "required": true,
+            "description": "最后更新时间戳"
+          }
+        ]
+      },
+      "evidence": [
+        {
+          "view": "mod-storage",
+          "id": 10
+        },
+        {
+          "view": "mod-storage",
+          "id": 11
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "normal",
+      "name": "JobCreate",
+      "description": "创建任务的请求体：任务类型、任务内容和最大尝试次数。",
+      "contract": {
+        "kind": "type",
+        "fields": [
+          {
+            "name": "kind",
+            "type": "string",
+            "required": true,
+            "description": "任务类型；必须是已登记的计划"
+          },
+          {
+            "name": "payload",
+            "type": "object",
+            "description": "任务内容；省略时为空对象"
+          },
+          {
+            "name": "max_attempts",
+            "type": "int",
+            "description": "最多尝试次数；省略时为 3，必须是整数"
+          }
+        ]
+      },
+      "evidence": [
+        {
+          "view": "fn-api-create-job",
+          "id": 42
+        },
+        {
+          "view": "fn-api-create-job",
+          "id": 49
+        },
+        {
+          "view": "fn-api-create-job",
+          "id": 53
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "normal",
+      "name": "JobList",
+      "description": "任务列表的响应体：jobs 数组，每项是一条任务记录。",
+      "contract": {
+        "kind": "type",
+        "fields": [
+          {
+            "name": "jobs",
+            "type": "Job[]",
+            "required": true,
+            "description": "按状态和条数过滤后的任务数组"
+          }
+        ]
+      },
+      "evidence": [
+        {
+          "view": "fn-api-list-jobs",
+          "id": 20
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "normal",
+      "name": "Health",
+      "description": "健康检查的响应体：服务状态、存储统计和已注册步骤。",
+      "contract": {
+        "kind": "type",
+        "fields": [
+          {
+            "name": "ok",
+            "type": "bool",
+            "required": true,
+            "description": "服务是否正常"
+          },
+          {
+            "name": "stats",
+            "type": "object",
+            "required": true,
+            "description": "按状态统计的任务计数"
+          },
+          {
+            "name": "steps",
+            "type": "string[]",
+            "required": true,
+            "description": "已注册的步骤名，按字母排序"
+          }
+        ]
+      },
+      "evidence": [
+        {
+          "view": "entry-http",
+          "id": 41
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "normal",
+      "name": "CancelResult",
+      "description": "取消任务成功的响应体；失败由错误状态码表达。",
+      "contract": {
+        "kind": "type",
+        "fields": [
+          {
+            "name": "canceled",
+            "type": "bool",
+            "required": true,
+            "description": "固定为 true"
+          }
+        ]
+      },
+      "evidence": [
+        {
+          "view": "entry-http",
+          "id": 45
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "normal",
+      "name": "健康检查",
+      "description": "不需要令牌；返回服务是否正常、任务计数和步骤表。",
+      "contract": {
+        "kind": "endpoint",
+        "method": "GET",
+        "path": "/health",
+        "auth": false,
+        "response": "Health",
+        "status": 200,
+        "handler": {
+          "view": "entry-http",
+          "id": 41
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "normal",
+      "name": "创建任务",
+      "description": "配置令牌时需要鉴权；校验类型、内容和尝试次数后写入并发布事件。",
+      "contract": {
+        "kind": "endpoint",
+        "method": "POST",
+        "path": "/api/jobs",
+        "auth": true,
+        "request": "JobCreate",
+        "response": "Job",
+        "status": 201,
+        "errors": [
+          {
+            "status": 400,
+            "when": "kind 为空、类型未登记、payload 不是对象或 max_attempts 不是整数"
+          }
+        ],
+        "handler": {
+          "view": "fn-api-create-job",
+          "id": 41
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "normal",
+      "name": "任务列表",
+      "description": "按状态过滤任务并限制返回条数；state 和 limit 都来自查询参数。",
+      "contract": {
+        "kind": "endpoint",
+        "method": "GET",
+        "path": "/api/jobs",
+        "auth": true,
+        "response": "JobList",
+        "status": 200,
+        "errors": [
+          {
+            "status": 400,
+            "when": "limit 不是整数"
+          }
+        ],
+        "handler": {
+          "view": "fn-api-list-jobs",
+          "id": 15
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "normal",
+      "name": "读取单条任务",
+      "description": "从路径读取任务 id；不存在时由分发层统一转成 404。",
+      "contract": {
+        "kind": "endpoint",
+        "method": "GET",
+        "path": "/api/jobs/{job_id}",
+        "auth": true,
+        "response": "Job",
+        "status": 200,
+        "errors": [
+          {
+            "status": 400,
+            "when": "job_id 不是正整数"
+          },
+          {
+            "status": 404,
+            "when": "任务不存在"
+          }
+        ],
+        "handler": {
+          "view": "entry-http",
+          "id": 44
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "normal",
+      "name": "取消任务",
+      "description": "只允许取消排队中或失败的任务；状态不允许时返回 409。",
+      "contract": {
+        "kind": "endpoint",
+        "method": "DELETE",
+        "path": "/api/jobs/{job_id}",
+        "auth": true,
+        "response": "CancelResult",
+        "status": 200,
+        "errors": [
+          {
+            "status": 400,
+            "when": "job_id 不是正整数"
+          },
+          {
+            "status": 404,
+            "when": "任务不存在"
+          },
+          {
+            "status": 409,
+            "when": "任务状态不允许取消"
+          }
+        ],
+        "handler": {
+          "view": "entry-http",
+          "id": 45
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "normal",
+      "name": "创建维护任务",
+      "description": "固定创建 maintenance 任务，最多尝试 2 次；不需要请求体。",
+      "contract": {
+        "kind": "endpoint",
+        "method": "POST",
+        "path": "/api/maintenance",
+        "auth": true,
+        "response": "Job",
+        "status": 202,
+        "handler": {
+          "view": "entry-http",
+          "id": 46
+        }
+      }
+    }
+  ]
+}
